@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<base target="_top">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bitrans Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   1. DESIGN TOKENS
+   ========================================================================== */
+:root {
+  --font:      'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  --bg:         #eef2f7;
+  --surface:    #ffffff;
+  --surface-2:  #f8fafc;
+  --border:     #e2e8f0;
+  --border-2:   #cbd5e1;
+  --text:       #1e293b;
+  --text-muted: #64748b;
+  --text-soft:  #94a3b8;
+
+  --primary:       #3b82f6;
+  --primary-dark:  #2563eb;
+  --primary-soft:  #eff6ff;
+  --purple:        #8b5cf6;
+  --green:         #16a34a;
+  --green-soft:    #dcfce7;
+  --amber:         #d97706;
+  --amber-soft:    #fef3c7;
+  --red:           #dc2626;
+  --red-soft:      #fee2e2;
+
+  --header-1: #334155;
+  --header-2: #1e293b;
+
+  --sidebar-w:           226px;
+  --sidebar-w-collapsed: 64px;
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 9px;
+  --radius-xs: 6px;
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, .04);
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, .06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, .10);
+  --shadow-lg: 0 16px 40px rgba(15, 23, 42, .16);
+
+  --ease:      cubic-bezier(.4, 0, .2, 1);
+  --t-fast:    .15s;
+  --t-med:     .22s;
+  --t-slow:    .32s;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   2. LAYOUT UTAMA
+   ========================================================================== */
+.app { display: flex; height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: linear-gradient(180deg, var(--header-2), #0b1220);
+  color: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  transition: width var(--t-slow) var(--ease);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+}
+.sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+
+.sidebar-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 14px; border-bottom: 1px solid rgba(255,255,255,.08);
+  min-height: 60px;
+}
+.sidebar-toggle {
+  width: 34px; height: 34px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.08); border: none; border-radius: var(--radius-sm);
+  color: #f1f5f9; font-size: 15px; cursor: pointer;
+  transition: background var(--t-fast) ease, transform var(--t-slow) var(--ease);
+}
+.sidebar-toggle:hover  { background: rgba(255,255,255,.18); }
+.sidebar-toggle:active { transform: scale(.9); }
+.sidebar.collapsed .sidebar-toggle { transform: rotate(180deg); }
+
+.sidebar-brand {
+  font-weight: 700; font-size: 14px; letter-spacing: .2px; white-space: nowrap; overflow: hidden;
+  opacity: 1; max-width: 160px;
+  transition: opacity .16s ease, max-width var(--t-slow) var(--ease);
+}
+.sidebar.collapsed .sidebar-brand {
+  opacity: 0; max-width: 0;
+  transition: opacity .08s ease, max-width .22s var(--ease);
+}
+
+.sidebar-nav { padding: 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px; border-radius: 10px;
+  background: transparent; border: none; color: #cbd5e1;
+  cursor: pointer; font-size: 13.5px; font-weight: 500; text-align: left;
+  font-family: var(--font); white-space: nowrap; overflow: hidden; width: 100%;
+  transition: background var(--t-fast) ease, color var(--t-fast) ease, transform var(--t-fast) ease;
+}
+.nav-item:hover      { background: rgba(255,255,255,.08); color: #fff; transform: translateX(2px); }
+.nav-item.active      { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(59,130,246,.35); }
+.nav-item.active:hover { transform: none; }
+.nav-icon  { font-size: 17px; flex-shrink: 0; width: 20px; text-align: center; }
+.nav-label {
+  overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+  transition: opacity .14s ease, max-width var(--t-slow) var(--ease);
+}
+.sidebar.collapsed .nav-item  { justify-content: center; padding: 11px; }
+.sidebar.collapsed .nav-label { opacity: 0; max-width: 0; transition: opacity .06s ease, max-width .18s var(--ease); }
+
+.sidebar-foot {
+  padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.08);
+  font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden;
+  transition: opacity var(--t-fast) ease;
+}
+.sidebar.collapsed .sidebar-foot { opacity: 0; }
+
+.main { flex: 1; min-width: 0; position: relative; height: 100vh; }
+
+.tab-pane {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; overflow: hidden;
+  opacity: 0; transform: translateY(6px);
+  visibility: hidden; pointer-events: none;
+  transition: opacity .26s var(--ease), transform .26s var(--ease), visibility 0s linear .26s;
+}
+.tab-pane.active-pane {
+  opacity: 1; transform: translateY(0);
+  visibility: visible; pointer-events: auto;
+  z-index: 2;
+  transition: opacity .26s var(--ease), transform .26s var(--ease), visibility 0s linear 0s;
+}
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+  padding: 14px 20px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  flex-shrink: 0;
+}
+.topbar-title { display: flex; flex-direction: column; gap: 2px; margin-right: 4px; }
+.topbar-title h2 { font-size: 15px; font-weight: 700; letter-spacing: .3px; white-space: nowrap; }
+.topbar-title .subtitle { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+.topbar-title .subtitle b { color: var(--text); font-weight: 600; }
+
+.topbar-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.topbar-filter select, .topbar-filter input {
+  height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border-2);
+  padding: 0 10px; font-size: 12.5px; font-family: var(--font); background: #fff; color: var(--text);
+  transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease;
+}
+.topbar-filter select { cursor: pointer; }
+.topbar-filter input  { width: 200px; }
+.topbar-filter select:hover, .topbar-filter input:hover { border-color: var(--text-soft); }
+.topbar-filter select:focus, .topbar-filter input:focus {
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.15); outline: none;
+}
+
+.btn {
+  height: 34px; padding: 0 15px; border: none; border-radius: var(--radius-sm);
+  font-size: 12.5px; font-weight: 600; font-family: var(--font); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background var(--t-fast) ease, transform var(--t-fast) ease, box-shadow var(--t-fast) ease, opacity var(--t-fast) ease;
+}
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn-primary { background: var(--primary); color: #fff; box-shadow: var(--shadow-xs); }
+.btn-primary:hover:not(:disabled) { background: var(--primary-dark); box-shadow: 0 6px 16px rgba(59,130,246,.3); }
+.btn-success { background: linear-gradient(135deg,#10b981,#059669); color: #fff; box-shadow: var(--shadow-xs); }
+.btn-success:hover:not(:disabled) { box-shadow: 0 8px 18px rgba(16,185,129,.32); }
+.btn-secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-2);
+}
+.btn-secondary:hover:not(:disabled) { background: #e2e8f0; }
+.btn-secondary.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(59,130,246,.3);
+}
+.btn-secondary.active:hover { background: var(--primary-dark); }
+.btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+.stat-strip {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  flex: 1 1 100%;
+  justify-content: center;
+}
+.stat-chip {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 13px; border-radius: 20px; background: var(--surface-2);
+  border: 1px solid var(--border); font-size: 12px; color: var(--text-muted); white-space: nowrap;
+  transition: border-color var(--t-fast) ease, background var(--t-fast) ease;
+}
+.stat-chip:hover { border-color: var(--border-2); background: #f1f5f9; }
+.stat-chip .dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.stat-chip b     { font-size: 13.5px; color: var(--text); font-weight: 700; font-family: var(--font-mono); }
+.dot-blue   { background: var(--primary); }
+.dot-purple { background: var(--purple); }
+.dot-green  { background: var(--green); }
+.dot-amber  { background: var(--amber); }
+.dot-red    { background: var(--red); }
+
+.table-wrap {
+  flex: 1; min-height: 0; overflow: auto;
+  margin: 14px 18px 18px; border-radius: var(--radius-md);
+  border: 1px solid var(--border); background: white;
+  box-shadow: var(--shadow-sm);
+}
+table { border-collapse: separate; border-spacing: 0; width: auto; table-layout: fixed; }
+th, td {
+  border: 1px solid var(--border); padding: 9px 10px; white-space: nowrap;
+  text-align: center; font-size: 13px; overflow: hidden; text-overflow: ellipsis;
+}
+th {
+  background: linear-gradient(180deg, var(--header-1), var(--header-2));
+  color: #f8fafc; position: sticky; top: 0; z-index: 20;
+  font-weight: 600; font-size: 12px; letter-spacing: .2px;
+}
+tbody tr { transition: background var(--t-fast) ease; }
+tbody tr:nth-child(even) { background: var(--surface-2); }
+tbody tr:hover            { background: #e0f2fe; }
+
+.sticky   { position: sticky; color: white; left: 0; }
+td.sticky { z-index: 30; }
+th.sticky { z-index: 40; }
+.col-op       { left: 0;   width: 130px; min-width: 130px; max-width: 130px; background: var(--header-1); }
+.col-nama     { left: 130px; width: 210px; min-width: 210px; max-width: 210px; background: var(--header-1); }
+.col-customer { left: 340px; width: 260px; min-width: 260px; max-width: 260px; background: #475569; }
+.col-produk   { left: 600px; width: 140px; min-width: 140px; max-width: 140px; background: #475569; }
+.col-toh      { left: 740px; width: 160px; min-width: 160px; max-width: 160px; background: #64748b; }
+.text-left { text-align: left !important; padding-left: 14px; }
+
+.col-day { width: 46px; min-width: 46px; max-width: 46px; }
+
+#spj-dataTable { table-layout: auto; width: 100%; min-width: 1430px; }
+
+.rekon, .non, .tidak {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; font-weight: 700; font-size: 12px; border-radius: 50%;
+  transition: transform var(--t-fast) ease;
+}
+tr:hover .rekon, tr:hover .non { transform: scale(1.08); }
+.rekon { background: var(--green); color: white; box-shadow: 0 0 0 3px rgba(22,163,74,.18); }
+.non   { background: var(--amber); color: white; box-shadow: 0 0 0 3px rgba(217,119,6,.18); }
+.tidak { background: var(--border); color: var(--text-soft); }
+
+.row-warning       { background: #fffaf0 !important; }
+.row-warning:hover { background: #ffedd5 !important; }
+
+.badge {
+  display: inline-block; padding: 3px 11px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: .2px;
+}
+.badge-green { background: var(--green-soft); color: #166534; }
+.badge-amber { background: var(--amber-soft); color: #92400e; }
+.badge-red   { background: var(--red-soft);   color: #991b1b; }
+.badge-gray  { background: var(--border);     color: var(--text-muted); }
+
+.pagination {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  padding: 10px 20px 18px; flex-shrink: 0;
+}
+.pagination-info     { font-size: 12.5px; color: var(--text-muted); }
+.pagination-controls  { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--text-muted); }
+.pagination-controls button {
+  padding: 7px 15px; border: 1px solid var(--border-2); background: white; color: var(--text);
+  border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font); font-weight: 500;
+  transition: background var(--t-fast) ease, color var(--t-fast) ease, border-color var(--t-fast) ease;
+}
+.pagination-controls button:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); }
+.pagination-controls button:disabled { opacity: .45; cursor: not-allowed; }
+
+#tabLooker { flex-direction: column; }
+#tabLooker iframe { flex: 1; width: 100%; border: 0; display: block; }
+#tabLooker .loading-state { flex: 1; height: auto; }
+
+.loading-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 60px 20px; color: var(--text-muted); font-size: 12.5px;
+}
+.spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid var(--border); border-top-color: var(--primary);
+  animation: spin .7s linear infinite;
+}
+.spinner-sm { width: 14px; height: 14px; border-width: 2px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state {
+  padding: 48px 20px; text-align: center; color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 30px; margin-bottom: 8px; opacity: .5; }
+.empty-state .empty-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.empty-state .empty-sub { font-size: 12px; }
+
+@keyframes fadeInContent { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+.content-fade { animation: fadeInContent var(--t-med) ease; }
+
+#toastContainer {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.toast {
+  min-width: 230px; max-width: 340px;
+  background: #1e293b; color: #f1f5f9; padding: 12px 16px;
+  border-radius: 10px; font-size: 12.5px; line-height: 1.45;
+  box-shadow: var(--shadow-lg);
+  border-left: 4px solid var(--primary);
+  display: flex; align-items: flex-start; gap: 8px;
+  opacity: 0; transform: translateX(24px) scale(.98);
+  transition: opacity var(--t-med) ease, transform var(--t-med) ease;
+  pointer-events: auto;
+}
+.toast.toast-show { opacity: 1; transform: translateX(0) scale(1); }
+.toast-error   { border-left-color: var(--red); }
+.toast-success { border-left-color: var(--green); }
+.toast-info    { border-left-color: var(--primary); }
+.toast-icon { flex-shrink: 0; font-size: 14px; line-height: 1; margin-top: 1px; }
+
+@media (max-width: 900px) {
+  .topbar-title h2 { font-size: 13px; }
+}
+@media (max-width: 640px) {
+  .sidebar { position: fixed; z-index: 200; height: 100vh; box-shadow: 4px 0 24px rgba(0,0,0,.28); }
+  .topbar-filter input { width: 150px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <button class="sidebar-toggle" id="sidebarToggle" title="Lipat / buka menu" aria-label="Lipat atau buka menu">☰</button>
+      <span class="sidebar-brand">Bitrans Dashboard</span>
+    </div>
+    <nav class="sidebar-nav" aria-label="Navigasi dashboard">
+      <button class="nav-item active" data-tab="rekon" title="Monitoring Rekon Bitrans">
+        <span class="nav-icon">📊</span><span class="nav-label">Monitoring Rekon Bitrans</span>
+      </button>
+      <button class="nav-item" data-tab="spj" title="Tracking SPJ Non Rekon">
+        <span class="nav-icon">📋</span><span class="nav-label">Tracking SPJ Non Rekon</span>
+      </button>
+      <button class="nav-item" data-tab="looker" title="Klaim BBM & Penyesuaian">
+        <span class="nav-icon">📈</span><span class="nav-label">Klaim BBM & Penyesuaian</span>
+      </button>
+    </nav>
+    <div class="sidebar-foot">Created By Fiqqq</div>
+  </aside>
+
+  <!-- KONTEN UTAMA -->
+  <main class="main">
+
+    <!-- ===== TAB 1 — MONITORING REKON ===== -->
+    <div id="tabRekon" class="tab-pane active-pane">
+      <div class="topbar">
+        <div class="topbar-title">
+          <h2>MONITORING REKON HARIAN BITRANS</h2>
+          <div class="subtitle">Periode <b id="periode"></b> &nbsp;·&nbsp; Update <b id="lastUpdate">-</b></div>
+        </div>
+        <div class="topbar-filter">
+          <select id="month" aria-label="Filter bulan"></select>
+          <select id="customer" aria-label="Filter customer"><option value="ALL">Semua Customer</option></select>
+          <select id="op" aria-label="Filter OP"><option value="ALL">Semua OP</option></select>
+          <select id="toh" aria-label="Filter TOH/WOH"><option value="ALL">Semua TOH/WOH</option></select>
+          <input id="search" placeholder="Cari OP / Customer / TOH / Produk / Status">
+          <!-- Tombol Sort by Non Rekon -->
+          <button id="sortNonBtn" class="btn btn-secondary" onclick="toggleSortNon()">↕ Sort by Non Rekon</button>
+          <button id="refreshBtn" class="btn btn-primary" onclick="refreshRekonData()">🔄 Refresh</button>
+          <button id="downloadBtn" class="btn btn-success" onclick="downloadReport()" disabled>⬇ Download</button>
+        </div>
+        <div class="stat-strip" id="stats"></div>
+      </div>
+      <div class="table-wrap">
+        <div id="monitor">
+          <div class="loading-state"><div class="spinner"></div>Memuat data monitoring...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB 2 — TRACKING SPJ ===== -->
+    <div id="tabSpj" class="tab-pane">
+      <div class="topbar">
+        <div class="topbar-title">
+          <h2>TRACKING SPJ NON REKON</h2>
+          <div class="subtitle">Update <b id="spj-lastUpdate">-</b></div>
+        </div>
+        <div class="topbar-filter">
+          <select id="spj-filterOP"         onchange="applySPJFilters()" aria-label="Filter OP"><option value="">ALL OP</option></select>
+          <select id="spj-filterCustomer"   onchange="applySPJFilters()" aria-label="Filter customer"><option value="">ALL Customer</option></select>
+          <select id="spj-filterProduk"     onchange="applySPJFilters()" aria-label="Filter produk"><option value="">ALL Produk</option></select>
+          <select id="spj-filterTOH"        onchange="applySPJFilters()" aria-label="Filter TOH/WOH"><option value="">ALL TOH/WOH</option></select>
+          <select id="spj-filterAdjustment" onchange="applySPJFilters()" aria-label="Filter status adjustment"><option value="">ALL Adjustment</option></select>
+          <input id="spj-searchInput" placeholder="🔍 Cari OP / Customer / TOH / Produk / No. SPJ" oninput="onSPJSearchInput()">
+          <button id="spjRefreshBtn" class="btn btn-primary" onclick="refreshSPJData()">🔄 Refresh</button>
+        </div>
+        <div class="stat-strip">
+          <div class="stat-chip"><span class="dot dot-blue"></span>Total <b id="spj-totalSPJ">0</b></div>
+          <div class="stat-chip"><span class="dot dot-amber"></span>Process <b id="spj-countProcess">0</b></div>
+          <div class="stat-chip"><span class="dot dot-green"></span>Done <b id="spj-countDone">0</b></div>
+          <div class="stat-chip"><span class="dot dot-red"></span>No Adj. <b id="spj-countNoAdjustment">0</b></div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div id="spjLoadingState" class="loading-state">
+          <div class="spinner"></div>Memuat data SPJ...
+        </div>
+        <table id="spj-dataTable" style="display:none;">
+          <thead><tr id="spj-tableHeader"></tr></thead>
+          <tbody id="spj-tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <div class="pagination-info"><span id="spj-totalRows">0</span> SPJ</div>
+        <div class="pagination-controls">
+          <button onclick="spjPrevPage()" id="spj-prevBtn">◀ Prev</button>
+          <span>Halaman <span id="spj-currentPage">1</span> dari <span id="spj-totalPages">1</span></span>
+          <button onclick="spjNextPage()" id="spj-nextBtn">Next ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB 3 — LOOKER STUDIO ===== -->
+    <div id="tabLooker" class="tab-pane">
+      <div id="lookerLoading" class="loading-state">
+        <div class="spinner"></div>Memuat dashboard Looker Studio...
+      </div>
+      <iframe
+        id="lookerFrame"
+        data-src="https://lookerstudio.google.com/embed/reporting/c52cbc36-25b6-4581-8f34-1f6fe427ee74/page/p_m62ko2r60d"
+        allowfullscreen
+        style="display:none;"
+        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+      </iframe>
+    </div>
+
+  </main>
+</div>
+
+<div id="toastContainer" aria-live="polite"></div>
+
+<script>
+/* ==========================================================================
+   0. UTIL
+   ========================================================================== */
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const TOAST_ICON = { success: '✅', error: '⚠️', info: 'ℹ️' };
+function showToast(message, type) {
+  const container = document.getElementById('toastContainer');
+  if (!container) { console.log(message); return; }
+  type = type || 'info';
+
+  const toast = document.createElement('div');
+  toast.className = 'toast toast-' + type;
+  toast.innerHTML =
+    '<span class="toast-icon">' + (TOAST_ICON[type] || TOAST_ICON.info) + '</span>' +
+    '<span>' + escapeHtml(message) + '</span>';
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add('toast-show'));
+  setTimeout(() => {
+    toast.classList.remove('toast-show');
+    setTimeout(() => toast.remove(), 250);
+  }, 3800);
+}
+
+/* ==========================================================================
+   1. SIDEBAR
+   ========================================================================== */
+const sidebarEl     = document.getElementById('sidebar');
+const sidebarToggle = document.getElementById('sidebarToggle');
+
+function setSidebarCollapsed(collapsed) {
+  sidebarEl.classList.toggle('collapsed', collapsed);
+  try { localStorage.setItem('bitransSidebarCollapsed', collapsed ? '1' : '0'); } catch (e) {}
+}
+sidebarToggle.addEventListener('click', () => {
+  setSidebarCollapsed(!sidebarEl.classList.contains('collapsed'));
+});
+(function initSidebar() {
+  let collapsed = window.innerWidth < 900;
+  try {
+    const saved = localStorage.getItem('bitransSidebarCollapsed');
+    if (saved !== null) collapsed = saved === '1';
+  } catch (e) {}
+  setSidebarCollapsed(collapsed);
+})();
+
+/* ==========================================================================
+   2. DASHBOARD 1 — MONITORING REKON
+   ========================================================================== */
+
+let rawData          = [];
+let lastServerUpdate  = null;
+let rekonRealtimeBusy = false;
+let sortByNonRekon   = false; // status sorting
+
+google.script.run
+  .withSuccessHandler(initRekon)
+  .withFailureHandler(err => console.error('Load Rekon error:', err))
+  .getMonitoringData();
+
+function initRekon(res) {
+  rawData = res.monitoring || [];
+  document.getElementById('lastUpdate').innerText = res.lastUpdate || "-";
+  lastServerUpdate = res.lastUpdate;
+  buildRekonFilters();
+  renderRekon();
+}
+
+function buildRekonFilters() {
+  const monthSel    = document.getElementById('month');
+  const customerSel = document.getElementById('customer');
+  const opSel       = document.getElementById('op');
+  const tohSel      = document.getElementById('toh');
+
+  const prevMonth    = monthSel.value;
+  const prevCustomer = customerSel.value;
+  const prevOp       = opSel.value;
+  const prevToh      = tohSel.value;
+
+  monthSel.innerHTML    = "";
+  customerSel.innerHTML = "<option value='ALL'>Semua Customer</option>";
+  opSel.innerHTML       = "<option value='ALL'>Semua OP</option>";
+  tohSel.innerHTML      = "<option value='ALL'>Semua TOH/WOH</option>";
+
+  const months = [...new Set(rawData.map(x => x.month))].sort().reverse();
+  months.forEach(m => monthSel.add(new Option(m, m)));
+  if (months.includes(prevMonth)) monthSel.value = prevMonth;
+
+  [...new Set(rawData.map(x => x.customer))].sort().forEach(c => customerSel.add(new Option(c, c)));
+  if ([...customerSel.options].some(o => o.value === prevCustomer)) customerSel.value = prevCustomer;
+
+  const opMap = {};
+  rawData.forEach(r => { if (!opMap[r.op]) opMap[r.op] = r.namaop; });
+  Object.entries(opMap)
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .forEach(([k, n]) => opSel.add(new Option(n, k)));
+  if ([...opSel.options].some(o => o.value === prevOp)) opSel.value = prevOp;
+
+  [...new Set(rawData.map(x => x.toh))].sort().forEach(t => tohSel.add(new Option(t, t)));
+  if ([...tohSel.options].some(o => o.value === prevToh)) tohSel.value = prevToh;
+
+  document.getElementById('periode').innerText = monthSel.value;
+
+  monthSel.onchange    = renderRekon;
+  customerSel.onchange = renderRekon;
+  opSel.onchange       = renderRekon;
+  tohSel.onchange      = renderRekon;
+
+  let searchTimer = null;
+  document.getElementById('search').oninput = () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderRekon, 180);
+  };
+}
+
+function getRekonFilteredData() {
+  let d = rawData.filter(x => x.month === document.getElementById('month').value);
+  const customer = document.getElementById('customer').value;
+  const op       = document.getElementById('op').value;
+  const toh      = document.getElementById('toh').value;
+  const search   = document.getElementById('search').value.toLowerCase();
+
+  if (customer !== "ALL") d = d.filter(x => x.customer === customer);
+  if (op       !== "ALL") d = d.filter(x => x.op       === op);
+  if (toh      !== "ALL") d = d.filter(x => x.toh      === toh);
+  if (search) {
+    d = d.filter(x =>
+      (x.op       || '').toLowerCase().includes(search) ||
+      (x.namaop   || '').toLowerCase().includes(search) ||
+      (x.customer || '').toLowerCase().includes(search) ||
+      (x.toh      || '').toLowerCase().includes(search) ||
+      (x.produk   || '').toLowerCase().includes(search) ||
+      (x.status   || '').toLowerCase().includes(search)
+    );
+  }
+  return d;
+}
+
+// ===== Render dengan sorting =====
+function renderRekon() {
+  const data = getRekonFilteredData();
+  document.getElementById('periode').innerText = document.getElementById('month').value;
+
+  const rowMeta   = new Map();
+  const rowHasNon = new Set();
+  const cellMap   = new Map();
+
+  data.forEach(r => {
+    const rowKey = r.op + "||" + r.customer + "||" + r.produk;
+    if (!rowMeta.has(rowKey)) rowMeta.set(rowKey, r);
+    if (r.status !== "Rekon") rowHasNon.add(rowKey);
+    cellMap.set(rowKey + "|" + parseInt(r.day), r);
+  });
+
+  let rows = [...rowMeta.keys()];
+  const days = [...new Set(data.map(x => parseInt(x.day)))].sort((a, b) => a - b);
+  const monitorEl = document.getElementById('monitor');
+
+  if (rows.length === 0) {
+    monitorEl.innerHTML =
+      '<div class="empty-state content-fade">' +
+        '<div class="empty-icon">🗂️</div>' +
+        '<div class="empty-title">Tidak ada data untuk filter yang dipilih</div>' +
+        '<div class="empty-sub">Coba ubah bulan, customer, OP, atau kata kunci pencarian.</div>' +
+      '</div>';
+    updateRekonStats(data);
+    document.getElementById("downloadBtn").disabled = true;
+    return;
+  }
+
+  // ===== SORTING: Non Rekon terlama (hari terkecil) di atas, lalu jumlah terbanyak =====
+  if (sortByNonRekon) {
+    // Buat array info untuk setiap rowKey
+    const rowInfo = rows.map(rowKey => {
+      let minDay = Infinity;
+      let count = 0;
+      days.forEach(day => {
+        const r = cellMap.get(rowKey + "|" + day);
+        if (r && r.status !== "Rekon") {
+          count++;
+          if (day < minDay) minDay = day;
+        }
+      });
+      return { rowKey, minDay, count };
+    });
+
+    // Urutkan: minDay ascending (terlama di atas), lalu count descending (tie-breaker)
+    rowInfo.sort((a, b) => {
+      if (a.minDay !== b.minDay) return a.minDay - b.minDay;
+      return b.count - a.count;
+    });
+
+    // Ambil rowKey dari hasil sorting
+    rows = rowInfo.map(info => info.rowKey);
+  }
+
+  const out = [];
+  out.push("<table><thead><tr>");
+  out.push("<th class='sticky col-op'>Kode OP</th>");
+  out.push("<th class='sticky col-nama'>Nama OP</th>");
+  out.push("<th class='sticky col-customer'>Customer</th>");
+  out.push("<th class='sticky col-produk'>Produk</th>");
+  out.push("<th class='sticky col-toh'>TOH</th>");
+  days.forEach(d => out.push("<th class='col-day'>" + d + "</th>"));
+  out.push("</tr></thead><tbody>");
+
+  rows.forEach(rowKey => {
+    const first  = rowMeta.get(rowKey);
+    const hasNon = rowHasNon.has(rowKey);
+    const [opVal, custVal, prodVal] = rowKey.split("||");
+
+    out.push(`<tr class="${hasNon ? 'row-warning' : ''}">`);
+    out.push(`<td class='sticky col-op text-left' title="${escapeHtml(opVal)}">${escapeHtml(opVal)}</td>`);
+    out.push(`<td class='sticky col-nama text-left' title="${escapeHtml(first.namaop)}">${escapeHtml(first.namaop)}</td>`);
+    out.push(`<td class='sticky col-customer text-left' title="${escapeHtml(custVal)}">${escapeHtml(custVal)}</td>`);
+    out.push(`<td class='sticky col-produk text-left' title="${escapeHtml(prodVal)}">${escapeHtml(prodVal)}</td>`);
+    out.push(`<td class='sticky col-toh text-left' title="${escapeHtml(first.toh)}">${escapeHtml(first.toh)}</td>`);
+
+    days.forEach(day => {
+      const r = cellMap.get(rowKey + "|" + day);
+      if (!r)                        out.push("<td><span class='tidak'>–</span></td>");
+      else if (r.status === "Rekon") out.push("<td><span class='rekon'>✔</span></td>");
+      else                            out.push("<td><span class='non'>!</span></td>");
+    });
+    out.push("</tr>");
+  });
+
+  out.push("</tbody></table>");
+  monitorEl.innerHTML = out.join("");
+  monitorEl.firstElementChild.classList.add('content-fade');
+  updateRekonStats(data);
+  document.getElementById("downloadBtn").disabled = (data.length === 0);
+}
+
+// ===== Toggle sort =====
+function toggleSortNon() {
+  sortByNonRekon = !sortByNonRekon;
+  const btn = document.getElementById('sortNonBtn');
+  if (sortByNonRekon) {
+    btn.classList.add('active');
+    btn.innerText = '↕ Sort: ON';
+  } else {
+    btn.classList.remove('active');
+    btn.innerText = '↕ Sort by Non Rekon';
+  }
+  renderRekon();
+}
+
+function updateRekonStats(d) {
+  const totalOP       = new Set(d.map(x => x.op)).size;
+  const totalCustomer = new Set(d.map(x => x.customer)).size;
+  let rekon = 0, non = 0;
+  d.forEach(x => { if (x.status === "Rekon") rekon++; else non++; });
+
+  document.getElementById('stats').innerHTML =
+    `<div class="stat-chip"><span class="dot dot-blue"></span>Total OP <b>${totalOP}</b></div>` +
+    `<div class="stat-chip"><span class="dot dot-purple"></span>Customer <b>${totalCustomer}</b></div>` +
+    `<div class="stat-chip"><span class="dot dot-green"></span>Rekon <b>${rekon}</b></div>` +
+    `<div class="stat-chip"><span class="dot dot-amber"></span>Non Rekon <b>${non}</b></div>`;
+}
+
+function refreshRekonData() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled  = true;
+  btn.innerText = "⏳ Loading...";
+
+  google.script.run
+    .withSuccessHandler(res => {
+      rawData = res.monitoring || [];
+      document.getElementById('lastUpdate').innerText = res.lastUpdate || "-";
+      lastServerUpdate = res.lastUpdate;
+      buildRekonFilters();
+      renderRekon();
+      btn.disabled  = false;
+      btn.innerText = "🔄 Refresh";
+      showToast("Data monitoring berhasil diperbarui.", "success");
+    })
+    .withFailureHandler(err => {
+      btn.disabled  = false;
+      btn.innerText = "🔄 Refresh";
+      showToast("Refresh gagal: " + err.message, "error");
+    })
+    .getMonitoringData();
+}
+
+function downloadReport() {
+  const btn           = document.getElementById("downloadBtn");
+  const selectedMonth  = document.getElementById("month").value;
+  if (!selectedMonth) { showToast("Pilih bulan terlebih dahulu.", "error"); return; }
+
+  btn.disabled  = true;
+  btn.innerText = "Downloading...";
+
+  google.script.run
+    .withSuccessHandler(file => {
+      btn.disabled  = false;
+      btn.innerText = "⬇ Download";
+      if (!file || !file.data) { showToast("Tidak ada data untuk di-download.", "error"); return; }
+      try {
+        const bytes = atob(file.data);
+        const arr   = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        const blob  = new Blob([arr], { type: file.mimeType });
+        const link  = document.createElement("a");
+        link.href     = URL.createObjectURL(blob);
+        link.download = file.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        showToast("Laporan berhasil diunduh.", "success");
+      } catch (e) {
+        showToast("Gagal memproses file download: " + e.message, "error");
+      }
+    })
+    .withFailureHandler(err => {
+      btn.disabled  = false;
+      btn.innerText = "⬇ Download";
+      showToast("Error: " + err.message, "error");
+    })
+    .downloadNonRekonReport(selectedMonth);
+}
+
+function checkRealtimeUpdate() {
+  if (rekonRealtimeBusy) return;
+  rekonRealtimeBusy = true;
+
+  google.script.run
+    .withSuccessHandler(serverTime => {
+      rekonRealtimeBusy = false;
+      if (!serverTime) return;
+      if (lastServerUpdate === null) { lastServerUpdate = serverTime; return; }
+
+      if (serverTime !== lastServerUpdate) {
+        const span = document.getElementById("lastUpdate");
+        span.style.color = "var(--amber)";
+        span.innerText   = "Updating...";
+
+        google.script.run
+          .withSuccessHandler(res => {
+            rawData          = res.monitoring || [];
+            lastServerUpdate = serverTime;
+            span.innerText   = res.lastUpdate || "-";
+            span.style.color = "var(--green)";
+            renderRekon();
+          })
+          .withFailureHandler(err => {
+            span.style.color = "var(--red)";
+            span.innerText   = "Gagal update";
+            console.error('Realtime update error:', err);
+          })
+          .getMonitoringData();
+      }
+    })
+    .withFailureHandler(err => {
+      rekonRealtimeBusy = false;
+      console.error('checkRealtimeUpdate error:', err);
+    })
+    .getLastUpdate();
+}
+setInterval(checkRealtimeUpdate, 5000);
+
+/* ==========================================================================
+   3. DASHBOARD 2 — TRACKING SPJ
+   ========================================================================== */
+
+let spjAllData        = [];
+let spjFilteredData   = [];
+let spjCurrentPage    = 1;
+const SPJ_ROWS_PER_PAGE = 20;
+let spjTanggalColumns = [];
+let spjSearchTimer    = null;
+
+function formatSPJDate(dateStr) {
+  if (!dateStr || dateStr === 'Belum ada update' || dateStr === 'Error baca update') return dateStr;
+  let date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    const parts = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})/);
+    if (parts) {
+      const [, d, m, y, h, min, s] = parts;
+      date = new Date(y, m - 1, d, h, min, s);
+    } else {
+      return dateStr;
+    }
+  }
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    + " - " + date.toLocaleTimeString('en-US', { hour12: false });
+}
+
+function spjStatusBadge(value) {
+  const v = (value || '').toString().trim().toLowerCase();
+  if (!v) return '';
+  if (v === 'done' || v === 'rekon')               return `<span class="badge badge-green">${escapeHtml(value)}</span>`;
+  if (v === 'process' || v === 'on progress')      return `<span class="badge badge-amber">${escapeHtml(value)}</span>`;
+  if (v === 'no adjustment' || v === 'non rekon')  return `<span class="badge badge-red">${escapeHtml(value)}</span>`;
+  return `<span class="badge badge-gray">${escapeHtml(value)}</span>`;
+}
+
+function onSPJSearchInput() {
+  clearTimeout(spjSearchTimer);
+  spjSearchTimer = setTimeout(applySPJFilters, 180);
+}
+
+function toggleSPJLoading(isLoading) {
+  const loadingEl = document.getElementById('spjLoadingState');
+  const tableEl   = document.getElementById('spj-dataTable');
+  if (loadingEl) loadingEl.style.display = isLoading ? 'flex' : 'none';
+  if (tableEl)   tableEl.style.display   = isLoading ? 'none' : 'table';
+}
+
+function loadSPJData(isRefresh) {
+  google.script.run
+    .withSuccessHandler(res => displaySPJData(res, isRefresh))
+    .withFailureHandler(err => {
+      toggleSPJLoading(false);
+      document.getElementById('spj-tableBody').innerHTML =
+        `<tr><td colspan="11" style="padding:0;">` +
+          `<div class="empty-state"><div class="empty-icon">⚠️</div>` +
+          `<div class="empty-title">Gagal memuat data SPJ</div>` +
+          `<div class="empty-sub">Coba klik tombol Refresh beberapa saat lagi.</div></div>` +
+        `</td></tr>`;
+      showToast('Error SPJ: ' + err.message, 'error');
+    })
+    .getSPJData();
+}
+
+function displaySPJData(result, isRefresh) {
+  if (!result.success) {
+    toggleSPJLoading(false);
+    showToast('Error SPJ: ' + result.error, 'error');
+    return;
+  }
+  toggleSPJLoading(false);
+  spjAllData        = result.data           || [];
+  spjTanggalColumns  = result.tanggalColumns || [];
+  if (result.tanggalUpdate) {
+    document.getElementById('spj-lastUpdate').textContent = formatSPJDate(result.tanggalUpdate);
+  }
+  populateSPJFilters(result.filters);
+  spjFilteredData = [...spjAllData];
+  applySPJFilters();
+  if (isRefresh) showToast("Data SPJ berhasil diperbarui.", "success");
+}
+
+function populateSPJFilters(filters) {
+  const setOptions = (id, label, arr) => {
+    const el = document.getElementById(id);
+    const prevVal = el.value;
+    el.innerHTML = `<option value="">${escapeHtml(label)}</option>`;
+    (arr || []).forEach(val => {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = val;
+      el.appendChild(opt);
+    });
+    if ([...el.options].some(o => o.value === prevVal)) el.value = prevVal;
+  };
+  setOptions('spj-filterOP',         'ALL OP',         filters.kodeOP);
+  setOptions('spj-filterCustomer',   'ALL Customer',   filters.customer);
+  setOptions('spj-filterProduk',     'ALL Produk',     filters.produk);
+  setOptions('spj-filterTOH',        'ALL TOH/WOH',    filters.toh);
+  setOptions('spj-filterAdjustment', 'ALL Adjustment', filters.adjustment);
+}
+
+function applySPJFilters() {
+  const op         = document.getElementById('spj-filterOP').value;
+  const customer   = document.getElementById('spj-filterCustomer').value;
+  const produk     = document.getElementById('spj-filterProduk').value;
+  const toh        = document.getElementById('spj-filterTOH').value;
+  const adjustment = document.getElementById('spj-filterAdjustment').value;
+  const search     = document.getElementById('spj-searchInput').value.toLowerCase();
+
+  spjFilteredData = spjAllData.filter(item => {
+    if (op         && item['Kode OP']          !== op)         return false;
+    if (customer   && item['Customer']          !== customer)   return false;
+    if (produk     && item['Produk']            !== produk)     return false;
+    if (toh        && item['Nama TOH/WOH']      !== toh)        return false;
+    if (adjustment && item['Status Adjustment'] !== adjustment) return false;
+    if (search) {
+      const haystack = [
+        item['Kode OP'], item['Nama OP'], item['Customer'],
+        item['Produk'],  item['Nama TOH/WOH'], item['Status Adjustment'], item['SPJ']
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+
+  updateSPJSummary();
+  spjCurrentPage = 1;
+  renderSPJTable();
+}
+
+function updateSPJSummary() {
+  const total = spjFilteredData.length;
+  let inProcess = 0, done = 0, noAdjustment = 0;
+  spjFilteredData.forEach(i => {
+    const v = (i['Status Adjustment'] || '').toLowerCase();
+    if (v === 'process') inProcess++;
+    else if (v === 'done') done++;
+    else if (v === 'no adjustment') noAdjustment++;
+  });
+  document.getElementById('spj-totalSPJ').textContent          = total;
+  document.getElementById('spj-countProcess').textContent      = inProcess;
+  document.getElementById('spj-countDone').textContent         = done;
+  document.getElementById('spj-countNoAdjustment').textContent = noAdjustment;
+}
+
+function renderSPJTable() {
+  const start    = (spjCurrentPage - 1) * SPJ_ROWS_PER_PAGE;
+  const end      = Math.min(start + SPJ_ROWS_PER_PAGE, spjFilteredData.length);
+  const pageData = spjFilteredData.slice(start, end);
+  renderSPJHeader();
+  renderSPJBody(pageData);
+  updateSPJPages();
+}
+
+function renderSPJHeader() {
+  const leftHeaders = [
+    { label: 'Kode OP',  cls: 'col-w-110 text-left' },
+    { label: 'Nama OP',  cls: 'col-w-190 text-left' },
+    { label: 'Customer', cls: 'col-w-220 text-left' },
+    { label: 'SPJ',      cls: 'col-w-90' },
+    { label: 'Produk',   cls: 'col-w-110 text-left' }
+  ];
+  const midHeaders = [
+    { label: 'Tanggal SLA',       cls: 'col-w-110' },
+    { label: 'UJP',               cls: 'col-w-90'  },
+    { label: 'Charging',          cls: 'col-w-90'  },
+    { label: 'Status Rekon',      cls: 'col-w-120' },
+    { label: 'Nama TOH/WOH',      cls: 'col-w-160 text-left' },
+    { label: 'Status Adjustment', cls: 'col-w-140' }
+  ];
+  const out = [];
+  leftHeaders.forEach(h => out.push(`<th class="${h.cls}">${h.label}</th>`));
+  midHeaders.forEach(h  => out.push(`<th class="${h.cls}">${h.label}</th>`));
+  spjTanggalColumns.forEach(t => out.push(`<th class="col-w-100">${escapeHtml(t)}</th>`));
+  document.getElementById('spj-tableHeader').innerHTML = out.join("");
+}
+
+function renderSPJBody(data) {
+  const tbody = document.getElementById('spj-tableBody');
+  if (data.length === 0) {
+    tbody.innerHTML =
+      `<tr><td colspan="${11 + spjTanggalColumns.length}" style="padding:0;">` +
+        `<div class="empty-state content-fade"><div class="empty-icon">🗂️</div>` +
+        `<div class="empty-title">Tidak ada data untuk filter yang dipilih</div>` +
+        `<div class="empty-sub">Coba ubah filter atau kata kunci pencarian.</div></div>` +
+      `</td></tr>`;
+    return;
+  }
+  const out = [];
+  data.forEach(item => {
+    out.push('<tr>');
+    out.push(`<td class="text-left">${escapeHtml(item['Kode OP'])}</td>`);
+    out.push(`<td class="text-left">${escapeHtml(item['Nama OP'])}</td>`);
+    out.push(`<td class="text-left">${escapeHtml(item['Customer'])}</td>`);
+    out.push(`<td>${escapeHtml(item['SPJ']) || '-'}</td>`);
+    out.push(`<td class="text-left">${escapeHtml(item['Produk'])}</td>`);
+    out.push(`<td>${escapeHtml(item['Tanggal SLA'])}</td>`);
+    out.push(`<td>${escapeHtml(item['UJP'])}</td>`);
+    out.push(`<td>${escapeHtml(item['Charging'])}</td>`);
+    out.push(`<td>${spjStatusBadge(item['Status Rekon'])}</td>`);
+    out.push(`<td class="text-left">${escapeHtml(item['Nama TOH/WOH'])}</td>`);
+    out.push(`<td>${spjStatusBadge(item['Status Adjustment'])}</td>`);
+    spjTanggalColumns.forEach(col => out.push(`<td>${escapeHtml(item[col])}</td>`));
+    out.push('</tr>');
+  });
+  tbody.innerHTML = out.join("");
+  tbody.classList.remove('content-fade');
+  void tbody.offsetWidth;
+  tbody.classList.add('content-fade');
+}
+
+function updateSPJPages() {
+  const totalPages = Math.ceil(spjFilteredData.length / SPJ_ROWS_PER_PAGE);
+  document.getElementById('spj-totalRows').textContent   = spjFilteredData.length;
+  document.getElementById('spj-currentPage').textContent = spjFilteredData.length ? spjCurrentPage : 0;
+  document.getElementById('spj-totalPages').textContent  = totalPages || 1;
+  document.getElementById('spj-prevBtn').disabled        = (spjCurrentPage === 1);
+  document.getElementById('spj-nextBtn').disabled        = (spjCurrentPage >= (totalPages || 1));
+}
+
+function spjPrevPage() { if (spjCurrentPage > 1) { spjCurrentPage--; renderSPJTable(); } }
+function spjNextPage() {
+  const total = Math.ceil(spjFilteredData.length / SPJ_ROWS_PER_PAGE);
+  if (spjCurrentPage < total) { spjCurrentPage++; renderSPJTable(); }
+}
+
+function refreshSPJData() {
+  const btn = document.getElementById('spjRefreshBtn');
+  btn.disabled  = true;
+  btn.innerText = "⏳ Loading...";
+
+  google.script.run
+    .withSuccessHandler(res => {
+      displaySPJData(res, true);
+      btn.disabled  = false;
+      btn.innerText = "🔄 Refresh";
+    })
+    .withFailureHandler(err => {
+      btn.disabled  = false;
+      btn.innerText = "🔄 Refresh";
+      showToast('Error SPJ: ' + err.message, 'error');
+    })
+    .getSPJData();
+}
+
+let spjLoaded = false;
+function initSPJ() {
+  if (!spjLoaded) { loadSPJData(false); spjLoaded = true; }
+}
+
+/* ==========================================================================
+   4. DASHBOARD 3 — LOOKER STUDIO
+   ========================================================================== */
+let lookerLoaded = false;
+
+function initLooker() {
+  if (lookerLoaded) return;
+  lookerLoaded = true;
+  const frame = document.getElementById('lookerFrame');
+  frame.addEventListener('load', onLookerFrameLoad);
+  frame.src = frame.dataset.src;
+}
+
+function onLookerFrameLoad() {
+  const loading = document.getElementById('lookerLoading');
+  const frame   = document.getElementById('lookerFrame');
+  if (loading) loading.style.display = 'none';
+  frame.style.display = 'block';
+  triggerLookerResize();
+}
+
+function triggerLookerResize() {
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 250);
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 700);
+}
+
+/* ==========================================================================
+   5. NAVIGASI SIDEBAR
+   ========================================================================== */
+const TAB_ID_MAP = { rekon: 'tabRekon', spj: 'tabSpj', looker: 'tabLooker' };
+
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const nextPane    = document.getElementById(TAB_ID_MAP[tabId]);
+  const currentPane = document.querySelector('.tab-pane.active-pane');
+
+  if (currentPane !== nextPane) {
+    if (currentPane) currentPane.classList.remove('active-pane');
+    nextPane.classList.add('active-pane');
+
+    if (tabId === 'spj') initSPJ();
+    if (tabId === 'looker') {
+      initLooker();
+      triggerLookerResize();
+    }
+  }
+
+  if (window.innerWidth < 640) setSidebarCollapsed(true);
+}
+
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab'), btn));
+});
+</script>
+</body>
+</html>
