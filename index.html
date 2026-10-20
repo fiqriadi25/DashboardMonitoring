@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <base target="_top">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bitrans Dashboard</title>
+<title>Monitoring Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -38,7 +38,7 @@
   --header-1: #334155;
   --header-2: #1e293b;
 
-  --sidebar-w:           226px;
+  --sidebar-w:           clamp(236px, 18vw, 280px);
   --sidebar-w-collapsed: 64px;
 
   --radius-lg: 16px;
@@ -92,17 +92,31 @@ a:focus-visible {
 
 .sidebar {
   width: var(--sidebar-w);
-  flex-shrink: 0;
+  flex: 0 0 var(--sidebar-w);
   background: linear-gradient(180deg, var(--header-2), #0b1220);
   color: #f1f5f9;
   display: flex;
   flex-direction: column;
-  transition: width var(--t-slow) var(--ease);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
   z-index: 100;
+  backface-visibility: hidden;
+  will-change: width, flex-basis;
+  transition:
+    width .36s var(--ease),
+    flex-basis .36s var(--ease);
 }
-.sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+.sidebar.collapsed {
+  width: var(--sidebar-w-collapsed);
+  flex-basis: var(--sidebar-w-collapsed);
+}
+.sidebar.no-transition,
+.sidebar.no-transition * {
+  transition: none !important;
+}
+.sidebar.is-animating .nav-item {
+  pointer-events: none;
+}
 
 .sidebar-head {
   display: flex; align-items: center; gap: 10px;
@@ -110,52 +124,105 @@ a:focus-visible {
   min-height: 60px;
 }
 .sidebar-toggle {
-  width: 34px; height: 34px; flex-shrink: 0;
+  width: 34px; height: 34px; flex: 0 0 34px;
   display: flex; align-items: center; justify-content: center;
   background: rgba(255,255,255,.08); border: none; border-radius: var(--radius-sm);
   color: #f1f5f9; font-size: 15px; cursor: pointer;
-  transition: background var(--t-fast) ease, transform var(--t-slow) var(--ease);
+  transform: translateZ(0);
+  transition:
+    background var(--t-fast) ease,
+    transform var(--t-fast) var(--ease);
 }
 .sidebar-toggle:hover  { background: rgba(255,255,255,.18); }
-.sidebar-toggle:active { transform: scale(.9); }
-.sidebar.collapsed .sidebar-toggle { transform: rotate(180deg); }
+.sidebar-toggle:active { transform: translateZ(0) scale(.92); }
 
 .sidebar-brand {
-  font-weight: 700; font-size: 14px; letter-spacing: .2px; white-space: nowrap; overflow: hidden;
-  opacity: 1; max-width: 160px;
-  transition: opacity .16s ease, max-width var(--t-slow) var(--ease);
+  flex: 0 0 auto;
+  width: calc(var(--sidebar-w) - 78px);
+  min-width: 0;
+  max-width: calc(var(--sidebar-w) - 78px);
+  font-weight: 700; font-size: 14px; letter-spacing: .2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  opacity: 1; visibility: visible; transform: translateX(0);
+  will-change: opacity, transform;
+  transition:
+    opacity .15s ease .30s,
+    transform .20s var(--ease) .28s,
+    visibility 0s linear .30s;
 }
 .sidebar.collapsed .sidebar-brand {
-  opacity: 0; max-width: 0;
-  transition: opacity .08s ease, max-width .22s var(--ease);
+  opacity: 0; visibility: hidden; transform: translateX(-6px);
+  transition:
+    opacity .06s ease,
+    transform .10s var(--ease),
+    visibility 0s linear .06s;
 }
 
-.sidebar-nav { padding: 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }
+.sidebar-nav {
+  padding: 10px;
+  display: flex; flex-direction: column; gap: 4px;
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+}
 .nav-item {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; justify-content: flex-start; gap: 12px;
   padding: 11px 12px; border-radius: 10px;
   background: transparent; border: none; color: #cbd5e1;
   cursor: pointer; font-size: 13.5px; font-weight: 500; text-align: left;
-  font-family: var(--font); white-space: nowrap; overflow: hidden; width: 100%;
-  transition: background var(--t-fast) ease, color var(--t-fast) ease, transform var(--t-fast) ease;
+  font-family: var(--font); white-space: normal; overflow: hidden;
+  width: 100%; min-height: 44px;
+  transition:
+    background var(--t-fast) ease,
+    color var(--t-fast) ease,
+    transform var(--t-fast) ease;
 }
-.nav-item:hover      { background: rgba(255,255,255,.08); color: #fff; transform: translateX(2px); }
+.nav-item:hover       { background: rgba(255,255,255,.08); color: #fff; transform: translateX(2px); }
 .nav-item.active      { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(59,130,246,.35); }
 .nav-item.active:hover { transform: none; }
-.nav-icon  { font-size: 17px; flex-shrink: 0; width: 20px; text-align: center; }
-.nav-label {
-  overflow: hidden; text-overflow: ellipsis; max-width: 160px;
-  transition: opacity .14s ease, max-width var(--t-slow) var(--ease);
+.nav-icon {
+  font-size: 17px;
+  flex: 0 0 20px;
+  width: 20px;
+  text-align: center;
+  transform: translateZ(0);
 }
-.sidebar.collapsed .nav-item  { justify-content: center; padding: 11px; }
-.sidebar.collapsed .nav-label { opacity: 0; max-width: 0; transition: opacity .06s ease, max-width .18s var(--ease); }
+.nav-label {
+  flex: 0 0 auto;
+  width: calc(var(--sidebar-w) - 68px);
+  min-width: 0;
+  max-width: calc(var(--sidebar-w) - 68px);
+  overflow: visible; text-overflow: clip;
+  white-space: normal; line-height: 1.35; overflow-wrap: anywhere;
+  opacity: 1; visibility: visible; transform: translateX(0);
+  will-change: opacity, transform;
+  transition:
+    opacity .15s ease .30s,
+    transform .20s var(--ease) .28s,
+    visibility 0s linear .30s;
+}
+.sidebar.collapsed .nav-label {
+  opacity: 0; visibility: hidden; transform: translateX(-6px);
+  transition:
+    opacity .06s ease,
+    transform .10s var(--ease),
+    visibility 0s linear .06s;
+}
 
 .sidebar-foot {
   padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.08);
   font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden;
-  transition: opacity var(--t-fast) ease;
+  opacity: 1; visibility: visible; transform: translateX(0);
+  transition:
+    opacity .15s ease .30s,
+    transform .20s var(--ease) .28s,
+    visibility 0s linear .30s;
 }
-.sidebar.collapsed .sidebar-foot { opacity: 0; }
+.sidebar.collapsed .sidebar-foot {
+  opacity: 0; visibility: hidden; transform: translateX(-6px);
+  transition:
+    opacity .06s ease,
+    transform .10s var(--ease),
+    visibility 0s linear .06s;
+}
 
 .main { flex: 1; min-width: 0; position: relative; height: 100vh; }
 
@@ -198,6 +265,64 @@ a:focus-visible {
 .topbar-filter select:focus, .topbar-filter input:focus {
   border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.15); outline: none;
 }
+/* Searchable select — keeps the native select as the source of truth. */
+.search-select { position: relative; min-width: 150px; }
+.search-select-native {
+  position: absolute !important; width: 1px !important; height: 1px !important;
+  padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important;
+}
+.search-select-trigger {
+  width: 100%; height: 34px; padding: 0 34px 0 11px;
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text); font: 500 12.5px var(--font);
+  text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer; position: relative;
+  transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease, background var(--t-fast) ease;
+}
+.search-select-trigger::after {
+  content: ''; position: absolute; right: 12px; top: 50%; width: 7px; height: 7px;
+  border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted);
+  transform: translateY(-70%) rotate(45deg); transition: transform var(--t-med) var(--ease);
+}
+.search-select-trigger:hover { border-color: var(--text-soft); background: var(--surface-2); }
+.search-select.open .search-select-trigger {
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+}
+.search-select.open .search-select-trigger::after { transform: translateY(-25%) rotate(225deg); }
+.search-select-menu {
+  display: none; position: absolute; z-index: 300; top: calc(100% + 6px); left: 0;
+  width: max(100%, 260px); padding: 7px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+}
+.search-select.open .search-select-menu { display: block; animation: selectMenuIn var(--t-fast) var(--ease); }
+@keyframes selectMenuIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.search-select-search-wrap { position: relative; margin-bottom: 6px; }
+.search-select-search-wrap::before {
+  content: '\1F50D'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 12px; opacity: .55; pointer-events: none;
+}
+.topbar-filter .search-select-input {
+  width: 100%; height: 34px; padding: 0 30px 0 31px; background: var(--surface-2);
+}
+.search-select-clear {
+  display: none; position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  width: 25px; height: 25px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--text-muted); cursor: pointer; font-size: 16px;
+}
+.search-select-clear.visible { display: block; }
+.search-select-clear:hover { color: var(--text); background: var(--border); }
+.search-select-options { max-height: 240px; overflow-y: auto; overscroll-behavior: contain; }
+.search-select-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; min-height: 34px; padding: 8px 10px; border: 0; border-radius: 7px;
+  background: transparent; color: var(--text); font: 500 12px var(--font); text-align: left; cursor: pointer;
+}
+.search-select-option:hover, .search-select-option.highlighted { background: var(--primary-soft); color: var(--primary-dark); }
+.search-select-option.selected { background: var(--primary); color: #fff; font-weight: 600; }
+.search-select-option.selected::after { content: '\2713'; font-size: 13px; }
+.search-select-empty { padding: 22px 10px; color: var(--text-muted); font-size: 12px; text-align: center; }
+
 
 .btn {
   height: 34px; padding: 0 15px; border: none; border-radius: var(--radius-sm);
@@ -246,11 +371,27 @@ a:focus-visible {
 .dot-red    { background: var(--red); }
 
 .table-wrap {
-  flex: 1; min-height: 0; overflow: auto;
+  flex: 1; min-height: 0; overflow: auto; position: relative;
   margin: 14px 18px 18px; border-radius: var(--radius-md);
   border: 1px solid var(--border); background: white;
   box-shadow: var(--shadow-sm);
 }
+#monitor { min-height: 100%; }
+#monitor table.is-refreshing {
+  opacity: .58;
+  pointer-events: none;
+  transition: opacity var(--t-fast) ease;
+}
+.table-refresh-indicator {
+  position: absolute; top: 12px; left: 50%; z-index: 70;
+  transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border: 1px solid #bfdbfe; border-radius: 999px;
+  background: rgba(255,255,255,.96); color: var(--primary-dark);
+  box-shadow: var(--shadow-md); font-size: 12px; font-weight: 600;
+  pointer-events: none;
+}
+.table-refresh-indicator[hidden] { display: none; }
 table { border-collapse: separate; border-spacing: 0; width: auto; table-layout: fixed; }
 th, td {
   border: 1px solid var(--border); padding: 9px 10px; white-space: nowrap;
@@ -275,9 +416,31 @@ th.sticky { z-index: 40; }
 .col-toh      { left: 740px; width: 160px; min-width: 160px; max-width: 160px; background: #64748b; }
 .text-left { text-align: left !important; padding-left: 14px; }
 
+.currency-header {
+  width: 126px;
+  min-width: 126px;
+  max-width: 126px;
+}
+.currency-cell {
+  width: 126px;
+  min-width: 126px;
+  max-width: 126px;
+  padding-right: 14px !important;
+  text-align: right !important;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #0f172a;
+}
+
 .col-day { width: 46px; min-width: 46px; max-width: 46px; }
 
 #spj-dataTable { table-layout: auto; width: 100%; min-width: 1430px; }
+#spj-dataTable.is-refreshing {
+  opacity: .58;
+  pointer-events: none;
+  transition: opacity var(--t-fast) ease;
+}
 
 .rekon, .non, .tidak {
   display: inline-flex; align-items: center; justify-content: center;
@@ -305,15 +468,47 @@ tr:hover .rekon, tr:hover .non { transform: scale(1.08); }
   display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
   padding: 10px 20px 18px; flex-shrink: 0;
 }
-.pagination-info     { font-size: 12.5px; color: var(--text-muted); }
-.pagination-controls  { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--text-muted); }
-.pagination-controls button {
-  padding: 7px 15px; border: 1px solid var(--border-2); background: white; color: var(--text);
-  border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font); font-weight: 500;
-  transition: background var(--t-fast) ease, color var(--t-fast) ease, border-color var(--t-fast) ease;
+.pagination-info { font-size: 12.5px; color: var(--text-muted); }
+.pagination-info span { color: var(--text); font-weight: 700; font-family: var(--font-mono); }
+.pagination-controls {
+  display: flex; gap: 7px; align-items: center; flex-wrap: wrap;
+  font-size: 12.5px; color: var(--text-muted);
 }
-.pagination-controls button:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); }
+.pagination-controls button {
+  min-width: 34px; height: 34px; padding: 0 10px;
+  border: 1px solid var(--border-2); background: white; color: var(--text);
+  border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font); font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background var(--t-fast) ease, color var(--t-fast) ease,
+    border-color var(--t-fast) ease, transform var(--t-fast) ease, box-shadow var(--t-fast) ease;
+}
+.pagination-controls button:hover:not(:disabled) {
+  background: var(--primary-soft); color: var(--primary-dark); border-color: #93c5fd;
+  box-shadow: var(--shadow-xs); transform: translateY(-1px);
+}
 .pagination-controls button:disabled { opacity: .45; cursor: not-allowed; }
+.pagination-nav { font-size: 18px; line-height: 1; }
+.pagination-page-list { display: flex; align-items: center; gap: 5px; }
+.pagination-page-list .page-number { padding: 0; }
+.pagination-page-list .page-number.is-current {
+  color: #fff; background: var(--primary); border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(59,130,246,.25); cursor: default;
+}
+.pagination-page-list .page-number.is-current:hover {
+  color: #fff; background: var(--primary); border-color: var(--primary); transform: none;
+}
+.page-ellipsis { width: 22px; text-align: center; color: var(--text-soft); user-select: none; }
+.pagination-jump {
+  height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px 0 10px;
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); background: var(--surface);
+  color: var(--text-muted); white-space: nowrap;
+}
+.pagination-jump select {
+  height: 26px; min-width: 52px; padding: 0 22px 0 7px; border: 0; border-radius: 6px;
+  background-color: var(--surface-2); color: var(--text); font: 700 12px var(--font-mono); cursor: pointer;
+}
+.pagination-jump select:disabled { opacity: .5; cursor: not-allowed; }
+.pagination-jump b { color: var(--text); font-family: var(--font-mono); }
 
 #tabLooker { flex-direction: column; }
 #tabLooker iframe { flex: 1; width: 100%; border: 0; display: block; }
@@ -321,12 +516,17 @@ tr:hover .rekon, tr:hover .non { transform: scale(1.08); }
 
 .loading-state {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; padding: 60px 20px; color: var(--text-muted); font-size: 12.5px;
+  gap: 12px; min-height: 240px; padding: 60px 20px; color: var(--text-muted); font-size: 12.5px;
+  text-align: center;
+}
+.table-wrap .loading-state {
+  position: absolute; inset: 0; min-height: 100%; z-index: 60;
+  background: rgba(255,255,255,.94); backdrop-filter: blur(2px);
 }
 .spinner {
   width: 32px; height: 32px; border-radius: 50%;
   border: 3px solid var(--border); border-top-color: var(--primary);
-  animation: spin .7s linear infinite;
+  animation: spin .7s linear infinite; box-shadow: 0 0 0 5px var(--primary-soft);
 }
 .spinner-sm { width: 14px; height: 14px; border-width: 2px; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -362,12 +562,102 @@ tr:hover .rekon, tr:hover .non { transform: scale(1.08); }
 .toast-info    { border-left-color: var(--primary); }
 .toast-icon { flex-shrink: 0; font-size: 14px; line-height: 1; margin-top: 1px; }
 
+/* Administration */
+.admin-shell { padding: 20px; overflow: auto; height: 100%; background: #f1f5f9; }
+.admin-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.admin-header h2 { margin: 0 0 5px; font-size: 20px; color: var(--text); }
+.admin-header p { margin: 0; color: var(--text-muted); font-size: 12px; }
+.admin-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-summary { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.admin-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); }
+.admin-summary-card { padding: 15px 16px; position: relative; overflow: hidden; }
+.admin-summary-card::after { content: ''; position: absolute; inset: auto -12px -20px auto; width: 64px; height: 64px; border-radius: 50%; background: var(--summary-color, #dbeafe); opacity: .7; }
+.admin-summary-card span { display: block; color: var(--text-muted); font-size: 11px; margin-bottom: 5px; }
+.admin-summary-card strong { font-size: 24px; color: var(--text); font-family: var(--font-mono); }
+.admin-summary-card small { display: block; margin-top: 4px; color: var(--text-soft); font-size: 10px; }
+.admin-section { margin-bottom: 18px; }
+.admin-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 16px; border-bottom: 1px solid var(--border); }
+.admin-section-head h3 { margin: 0; font-size: 14px; color: var(--text); }
+.admin-section-head p { margin: 3px 0 0; color: var(--text-muted); font-size: 11px; }
+.admin-section-body { padding: 16px; }
+.admin-area-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.admin-area-card { border: 1px solid var(--border); border-radius: 11px; padding: 12px; background: linear-gradient(145deg,#fff,#f8fafc); cursor: pointer; text-align: left; transition: transform var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast); }
+.admin-area-card:hover { transform: translateY(-2px); border-color: #93c5fd; box-shadow: var(--shadow-sm); }
+.admin-area-card.is-unmapped { border-color: #fdba74; background: #fffaf0; }
+.admin-area-card-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 9px; }
+.admin-area-card-head b { font-size: 12px; }
+.admin-area-card-head span { font: 700 11px var(--font-mono); color: var(--text-muted); }
+.admin-progress { height: 7px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.admin-progress > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#3b82f6,#22c55e); }
+.admin-area-meta { display: flex; justify-content: space-between; margin-top: 8px; color: var(--text-muted); font-size: 10px; }
+.admin-workspace { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr); gap: 14px; align-items: start; }
+.admin-mapping-panel { position: sticky; top: 0; border: 1px solid #bfdbfe; border-radius: 12px; padding: 15px; background: #f8fbff; }
+.admin-panel-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 12px; }
+.admin-panel-title strong { font-size: 13px; }
+.admin-mapping-id { font: 600 10px var(--font-mono); color: var(--primary-dark); background: var(--primary-soft); border-radius: 999px; padding: 4px 8px; }
+.admin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 11px; }
+.admin-field { display: flex; flex-direction: column; gap: 6px; }
+.admin-field-wide { grid-column: span 2; }
+.admin-field label { color: var(--text-muted); font-size: 10.5px; font-weight: 700; }
+.admin-field input, .admin-field select, .admin-toolbar input, .admin-toolbar select, .admin-bulk-bar input, .admin-bulk-bar select {
+  border: 1px solid var(--border-2); border-radius: 8px; padding: 9px 10px; background: #fff; color: var(--text); min-height: 38px; font: 12px var(--font);
+}
+.admin-field input:focus, .admin-field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.admin-form-actions { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.admin-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.admin-toolbar input { flex: 1 1 240px; }
+.admin-bulk-bar { display: none; grid-template-columns: auto minmax(120px,1fr) minmax(150px,1fr) auto; gap: 8px; align-items: center; padding: 10px; margin-bottom: 10px; border: 1px solid #bfdbfe; border-radius: 10px; background: var(--primary-soft); }
+.admin-bulk-bar.visible { display: grid; }
+.admin-bulk-count { font: 700 11px var(--font-mono); color: var(--primary-dark); white-space: nowrap; }
+.admin-table-wrap { overflow: auto; max-height: 510px; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 11.5px; table-layout: auto; }
+.admin-table th { position: sticky; top: 0; z-index: 1; background: #f8fafc; color: var(--text-muted); text-align: left; padding: 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.admin-table td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; text-align: left; white-space: normal; }
+.admin-table tr:last-child td { border-bottom: 0; }
+.admin-table tbody tr:hover { background: #f0f9ff; }
+.admin-table .btn { height: 30px; padding: 0 10px; font-size: 10.5px; }
+.admin-op-cell b, .admin-owner-cell b { display: block; margin-bottom: 2px; color: var(--text); }
+.admin-op-cell span, .admin-owner-cell span { display: block; color: var(--text-muted); font-size: 10px; line-height: 1.35; }
+.admin-op-cell .admin-missing-fields { color: var(--red); margin-top: 3px; }
+.admin-code { font: 600 10px var(--font-mono); color: var(--primary-dark); }
+.admin-badge { display: inline-flex; border-radius: 999px; padding: 3px 8px; font-size: 9.5px; font-weight: 800; white-space: nowrap; }
+.admin-badge-ok { background: #dcfce7; color: #166534; }
+.admin-badge-missing { background: #fee2e2; color: #991b1b; }
+.admin-badge-partial { background: #fef3c7; color: #92400e; }
+.admin-badge-conflict { background: #f3e8ff; color: #7e22ce; }
+.admin-note { margin-top: 9px; color: var(--text-muted); font-size: 11px; line-height: 1.5; }
+.admin-empty { padding: 28px; text-align: center !important; color: var(--text-muted); }
+.admin-settings-grid { display: grid; grid-template-columns: repeat(3, minmax(180px,1fr)); gap: 12px; }
+.admin-setting-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface-2); }
+.admin-setting-card label { display: block; color: var(--text); font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+.admin-setting-card small { display: block; color: var(--text-muted); font-size: 9.5px; margin-top: 5px; }
+.admin-setting-card input, .admin-setting-card select { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--border-2); border-radius: 8px; background: #fff; }
+.admin-advanced summary { cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text); padding: 4px 0; }
+.admin-advanced[open] summary { margin-bottom: 12px; }
+.nav-item[hidden] { display: none; }
+
 @media (max-width: 900px) {
+  :root { --sidebar-w: min(82vw, 270px); }
   .topbar-title h2 { font-size: 13px; }
+  .admin-form-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+  .admin-summary { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+  .admin-workspace { grid-template-columns: 1fr; }
+  .admin-mapping-panel { position: static; }
+  .admin-settings-grid { grid-template-columns: repeat(2, minmax(160px,1fr)); }
 }
 @media (max-width: 640px) {
   .sidebar { position: fixed; z-index: 200; height: 100vh; box-shadow: 4px 0 24px rgba(0,0,0,.28); }
   .topbar-filter input { width: 150px; }
+  .search-select { min-width: 140px; }
+  .search-select-menu { position: fixed; left: 76px; right: 12px; top: auto; width: auto; }
+  .pagination { justify-content: center; padding-inline: 12px; }
+  .pagination-info { flex-basis: 100%; text-align: center; }
+  .pagination-page-list { display: none; }
+  .pagination-controls { justify-content: center; }
+  .admin-shell { padding: 12px; }
+  .admin-summary, .admin-form-grid, .admin-settings-grid { grid-template-columns: 1fr; }
+  .admin-field-wide { grid-column: auto; }
+  .admin-bulk-bar { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -378,17 +668,20 @@ tr:hover .rekon, tr:hover .non { transform: scale(1.08); }
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
       <button class="sidebar-toggle" id="sidebarToggle" title="Lipat / buka menu" aria-label="Lipat atau buka menu">☰</button>
-      <span class="sidebar-brand">Bitrans Dashboard</span>
+      <span class="sidebar-brand">Monitoring Dashboard</span>
     </div>
     <nav class="sidebar-nav" aria-label="Navigasi dashboard">
-      <button class="nav-item active" data-tab="rekon" title="Monitoring Rekon Bitrans">
-        <span class="nav-icon">📊</span><span class="nav-label">Monitoring Rekon Bitrans</span>
+      <button class="nav-item active" data-tab="rekon" title="Rekon Bitrans">
+        <span class="nav-icon">📊</span><span class="nav-label">Rekon Bitrans</span>
       </button>
-      <button class="nav-item" data-tab="spj" title="Tracking SPJ Non Rekon">
-        <span class="nav-icon">📋</span><span class="nav-label">Tracking SPJ Non Rekon</span>
+      <button class="nav-item" data-tab="spj" title="Data Non Rekon">
+        <span class="nav-icon">📋</span><span class="nav-label">Data Non Rekon</span>
       </button>
-      <button class="nav-item" data-tab="looker" title="Klaim BBM & Penyesuaian">
-        <span class="nav-icon">📈</span><span class="nav-label">Klaim BBM & Penyesuaian</span>
+      <button class="nav-item" data-tab="looker" title="Data Pengajuan & Klaim BBM">
+        <span class="nav-icon">📈</span><span class="nav-label">Data Pengajuan & Klaim BBM</span>
+      </button>
+      <button class="nav-item" id="adminNavItem" data-tab="admin" title="Administration" hidden>
+        <span class="nav-icon">&#9881;</span><span class="nav-label">Administration</span>
       </button>
     </nav>
     <div class="sidebar-foot">Created By Fiqqq</div>
@@ -417,9 +710,26 @@ tr:hover .rekon, tr:hover .non { transform: scale(1.08); }
         </div>
         <div class="stat-strip" id="stats"></div>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" aria-busy="true">
+        <div id="rekonRefreshIndicator" class="table-refresh-indicator" role="status" aria-live="polite" hidden>
+          <span class="spinner spinner-sm" aria-hidden="true"></span>
+          <span id="rekonRefreshText">Memuat data...</span>
+        </div>
         <div id="monitor">
-          <div class="loading-state"><div class="spinner"></div>Memuat data monitoring...</div>
+          <div class="loading-state" role="status" aria-live="polite"><div class="spinner" aria-hidden="true"></div><span>Memuat data monitoring...</span></div>
+        </div>
+      </div>
+      <div class="pagination" id="rekon-pagination">
+        <div class="pagination-info"><span id="rekon-totalRows">0</span> baris monitoring</div>
+        <div class="pagination-controls" aria-label="Navigasi halaman monitoring">
+          <button type="button" class="pagination-nav" onclick="rekonPrevPage()" id="rekon-prevBtn" aria-label="Halaman sebelumnya" disabled>&#8249;</button>
+          <div class="pagination-page-list" id="rekon-pageNumbers"></div>
+          <label class="pagination-jump" for="rekon-pageSelect">
+            <span>Halaman</span>
+            <select id="rekon-pageSelect" onchange="rekonGoToPage(this.value)" aria-label="Pilih halaman monitoring" disabled><option value="1">1</option></select>
+            <span>dari <b id="rekon-totalPages">1</b></span>
+          </label>
+          <button type="button" class="pagination-nav" onclick="rekonNextPage()" id="rekon-nextBtn" aria-label="Halaman berikutnya" disabled>&#8250;</button>
         </div>
       </div>
     </div>
@@ -448,9 +758,9 @@ tr:hover .rekon, tr:hover .non { transform: scale(1.08); }
         </div>
       </div>
 
-      <div class="table-wrap">
-        <div id="spjLoadingState" class="loading-state">
-          <div class="spinner"></div>Memuat data SPJ...
+      <div class="table-wrap" aria-busy="true">
+        <div id="spjLoadingState" class="loading-state" role="status" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div><span>Memuat data SPJ...</span>
         </div>
         <table id="spj-dataTable" style="display:none;">
           <thead><tr id="spj-tableHeader"></tr></thead>
@@ -460,18 +770,23 @@ tr:hover .rekon, tr:hover .non { transform: scale(1.08); }
 
       <div class="pagination">
         <div class="pagination-info"><span id="spj-totalRows">0</span> SPJ</div>
-        <div class="pagination-controls">
-          <button onclick="spjPrevPage()" id="spj-prevBtn">◀ Prev</button>
-          <span>Halaman <span id="spj-currentPage">1</span> dari <span id="spj-totalPages">1</span></span>
-          <button onclick="spjNextPage()" id="spj-nextBtn">Next ▶</button>
+        <div class="pagination-controls" aria-label="Navigasi halaman SPJ">
+          <button type="button" class="pagination-nav" onclick="spjPrevPage()" id="spj-prevBtn" aria-label="Halaman sebelumnya" disabled>&#8249;</button>
+          <div class="pagination-page-list" id="spj-pageNumbers"></div>
+          <label class="pagination-jump" for="spj-pageSelect">
+            <span>Halaman</span>
+            <select id="spj-pageSelect" onchange="spjGoToPage(this.value)" aria-label="Pilih halaman SPJ" disabled><option value="1">1</option></select>
+            <span>dari <b id="spj-totalPages">1</b></span>
+          </label>
+          <button type="button" class="pagination-nav" onclick="spjNextPage()" id="spj-nextBtn" aria-label="Halaman berikutnya" disabled>&#8250;</button>
         </div>
       </div>
     </div>
 
     <!-- ===== TAB 3 — LOOKER STUDIO ===== -->
-    <div id="tabLooker" class="tab-pane">
-      <div id="lookerLoading" class="loading-state">
-        <div class="spinner"></div>Memuat dashboard Looker Studio...
+    <div id="tabLooker" class="tab-pane" aria-busy="true">
+      <div id="lookerLoading" class="loading-state" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div><span>Memuat dashboard Looker Studio...</span>
       </div>
       <iframe
         id="lookerFrame"
@@ -480,6 +795,118 @@ tr:hover .rekon, tr:hover .non { transform: scale(1.08); }
         style="display:none;"
         sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
       </iframe>
+    </div>
+
+    <!-- ===== TAB 4 — ADMINISTRATION ===== -->
+    <div id="tabAdmin" class="tab-pane">
+      <div class="admin-shell">
+        <div class="admin-header">
+          <div>
+            <h2>Administration Center</h2>
+            <p>Mapping area Operating Point, penanggung jawab, dan pengaturan dashboard dalam satu tempat.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button class="btn btn-secondary" type="button" onclick="resetAdministrationCaches()">Bersihkan cache</button>
+            <button id="adminRefreshBtn" class="btn btn-primary" type="button" onclick="loadAdministration(true)">&#8635; Refresh</button>
+          </div>
+        </div>
+
+        <div class="admin-summary">
+          <div class="admin-card admin-summary-card" style="--summary-color:#dbeafe"><span>Total OP unik</span><strong id="adminTotalOP">0</strong><small>Gabungan Rekon dan Non Rekon</small></div>
+          <div class="admin-card admin-summary-card" style="--summary-color:#dcfce7"><span>Mapping lengkap</span><strong id="adminCoveredOP">0</strong><small>Seluruh kolom master terisi</small></div>
+          <div class="admin-card admin-summary-card" style="--summary-color:#ffedd5"><span>Perlu dilengkapi</span><strong id="adminUncoveredOP">0</strong><small>Masuk antrean mapping</small></div>
+          <div class="admin-card admin-summary-card" style="--summary-color:#f3e8ff"><span>Konflik master</span><strong id="adminConflictOP">0</strong><small>Perlu validasi admin</small></div>
+        </div>
+
+        <section class="admin-card admin-section">
+          <div class="admin-section-head">
+            <div><h3>Peta coverage area</h3><p>Klik area untuk memfilter antrean Operating Point.</p></div>
+          </div>
+          <div class="admin-section-body"><div id="adminAreaBoard" class="admin-area-board"><div class="admin-empty">Memuat ringkasan area...</div></div></div>
+        </section>
+
+        <section class="admin-card admin-section">
+          <div class="admin-section-head">
+            <div><h3>Workspace mapping Operating Point</h3><p>Pilih dari antrean, lengkapi area dan PIC, lalu simpan tanpa membuka spreadsheet.</p></div>
+          </div>
+          <div class="admin-section-body">
+            <div class="admin-workspace">
+              <div>
+                <div class="admin-toolbar">
+                  <select id="adminCoverageStatus" onchange="renderAdminCoverage()">
+                    <option value="UNCOVERED">Perlu dilengkapi</option>
+                    <option value="ALL">Semua mapping</option>
+                    <option value="COVERED">Mapping lengkap</option>
+                    <option value="CONFLICT">Konflik master</option>
+                  </select>
+                  <select id="adminCoverageSource" onchange="renderAdminCoverage()">
+                    <option value="ALL">Semua sumber</option><option value="REKON">Rekon Bitrans</option><option value="SPJ">Data Non Rekon</option>
+                  </select>
+                  <select id="adminCoverageArea" onchange="renderAdminCoverage()"><option value="ALL">Semua area</option></select>
+                  <input id="adminCoverageSearch" placeholder="Cari kode OP, customer, area, atau PIC" oninput="renderAdminCoverage()">
+                </div>
+                <div id="adminBulkBar" class="admin-bulk-bar">
+                  <span class="admin-bulk-count"><span id="adminBulkCount">0</span> dipilih</span>
+                  <input id="adminBulkArea" list="adminAreaList" placeholder="Area tujuan">
+                  <select id="adminBulkOwner"><option value="">Pilih PIC/TOH</option></select>
+                  <button class="btn btn-primary" type="button" onclick="saveAdminBulkMapping()">Terapkan</button>
+                </div>
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
+                    <thead><tr><th><input id="adminSelectAll" type="checkbox" onchange="toggleAdminSelectAll(this.checked)" aria-label="Pilih semua yang tampil"></th><th>Status</th><th>Area</th><th>Sumber</th><th>Operating Point / Customer</th><th>PIC / TOH</th><th>Transaksi</th><th>Aksi</th></tr></thead>
+                    <tbody id="adminCoverageBody"><tr><td colspan="8" class="admin-empty">Buka menu Administration untuk memuat data.</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+              <aside class="admin-mapping-panel">
+                <div class="admin-panel-title"><strong>Detail mapping</strong><span id="adminMasterRowLabel" class="admin-mapping-id">MASTER_OP_OH</span></div>
+                <form id="adminMappingForm" class="admin-form-grid" onsubmit="saveAdminMapping(event)">
+                  <input id="adminMasterRow" type="hidden">
+                  <div class="admin-field"><label for="adminMapSource">Sumber data</label><select id="adminMapSource" required><option value="REKON">Rekon Bitrans</option><option value="SPJ">Data Non Rekon</option></select></div>
+                  <div class="admin-field"><label for="adminMapArea">Area</label><input id="adminMapArea" list="adminAreaList" maxlength="80" placeholder="Contoh: CENTRAL" required></div>
+                  <div class="admin-field"><label for="adminMapKodeCabang">Kode cabang</label><input id="adminMapKodeCabang" maxlength="80" placeholder="Contoh: JBK01" required></div>
+                  <div class="admin-field admin-field-wide"><label for="adminMapNamaCabang">Nama cabang</label><input id="adminMapNamaCabang" maxlength="180" required></div>
+                  <div class="admin-field"><label for="adminMapKodeOP">Kode OP</label><input id="adminMapKodeOP" maxlength="100" required></div>
+                  <div class="admin-field"><label for="adminMapNamaOP">Nama OP</label><input id="adminMapNamaOP" maxlength="180" required></div>
+                  <div class="admin-field admin-field-wide"><label for="adminMapCustomer">Customer</label><input id="adminMapCustomer" maxlength="180" required></div>
+                  <div class="admin-field"><label for="adminMapTOH">Nama PIC/TOH</label><input id="adminMapTOH" list="adminOwnerNameList" maxlength="180" required oninput="syncAdminOwnerEmail()"></div>
+                  <div class="admin-field"><label for="adminMapEmail">Email PIC/TOH</label><input id="adminMapEmail" type="email" maxlength="180" required></div>
+                  <div class="admin-form-actions admin-field-wide">
+                    <button id="adminMapSaveBtn" class="btn btn-primary" type="submit">Simpan mapping</button>
+                    <button class="btn btn-secondary" type="button" onclick="resetAdminMappingForm()">Mapping baru</button>
+                  </div>
+                </form>
+                <p class="admin-note">Mapping hanya disimpan di <b>Master_OP_OH</b>. Status lengkap membutuhkan Area, kode/nama cabang, kode/nama OP, Customer, Nama TOH/WOH, dan Email TOH. Nilai TOH pada data transaksi tidak digunakan untuk menentukan status mapping.</p>
+              </aside>
+            </div>
+            <datalist id="adminAreaList"></datalist>
+            <datalist id="adminOwnerNameList"></datalist>
+          </div>
+        </section>
+
+        <section class="admin-card admin-section">
+          <div class="admin-section-head"><div><h3>Pengaturan dashboard</h3><p>Pengaturan umum yang sebelumnya memerlukan perubahan kode atau sheet.</p></div></div>
+          <div class="admin-section-body">
+            <form id="adminSettingsForm" onsubmit="saveAdminSettings(event)">
+              <div id="adminSettingsGrid" class="admin-settings-grid"></div>
+              <div class="admin-form-actions" style="margin-top:12px"><button id="adminSettingsSaveBtn" class="btn btn-primary" type="submit">Simpan pengaturan</button></div>
+            </form>
+            <details class="admin-advanced" style="margin-top:16px">
+              <summary>Konfigurasi lanjutan</summary>
+              <form id="adminConfigForm" class="admin-form-grid" onsubmit="saveAdminConfig(event)">
+                <div class="admin-field"><label for="adminConfigKey">Config key</label><input id="adminConfigKey" placeholder="CONTOH_CONFIG" maxlength="80" required></div>
+                <div class="admin-field"><label for="adminConfigStatus">Status</label><select id="adminConfigStatus"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option></select></div>
+                <div class="admin-field admin-field-wide"><label for="adminConfigValue">Value</label><input id="adminConfigValue" maxlength="1000"></div>
+                <div class="admin-field admin-field-wide"><label for="adminConfigDescription">Deskripsi</label><input id="adminConfigDescription" maxlength="500"></div>
+                <div class="admin-form-actions admin-field-wide"><button id="adminConfigSaveBtn" class="btn btn-primary" type="submit">Simpan config</button><button class="btn btn-secondary" type="button" onclick="resetAdminConfigForm()">Reset</button></div>
+              </form>
+              <div class="admin-table-wrap" style="margin-top:14px;max-height:300px">
+                <table class="admin-table"><thead><tr><th>Config key</th><th>Value</th><th>Deskripsi</th><th>Status</th><th>Updated by</th><th>Aksi</th></tr></thead><tbody id="adminConfigBody"><tr><td colspan="6" class="admin-empty">Belum ada konfigurasi.</td></tr></tbody></table>
+              </div>
+            </details>
+          </div>
+        </section>
+      </div>
     </div>
 
   </main>
@@ -502,6 +929,83 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function getPaginationPages(currentPage, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+  if (currentPage <= 4) [2, 3, 4, 5].forEach(page => pages.add(page));
+  if (currentPage >= totalPages - 3) {
+    [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1].forEach(page => pages.add(page));
+  }
+  return Array.from(pages)
+    .filter(page => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+}
+
+function updatePaginationUI(options) {
+  const totalPages = Math.max(1, options.totalPages);
+  const currentPage = Math.min(Math.max(1, options.currentPage), totalPages);
+  const hasRows = options.totalRows > 0;
+
+  document.getElementById(options.totalRowsId).textContent = options.totalRows;
+  document.getElementById(options.totalPagesId).textContent = totalPages;
+  document.getElementById(options.prevButtonId).disabled = !hasRows || currentPage <= 1;
+  document.getElementById(options.nextButtonId).disabled = !hasRows || currentPage >= totalPages;
+
+  const select = document.getElementById(options.pageSelectId);
+  if (select.options.length !== totalPages) {
+    const selectFragment = document.createDocumentFragment();
+    for (let page = 1; page <= totalPages; page++) {
+      const option = document.createElement('option');
+      option.value = String(page);
+      option.textContent = String(page);
+      selectFragment.appendChild(option);
+    }
+    select.replaceChildren(selectFragment);
+  }
+  select.value = String(currentPage);
+  select.disabled = !hasRows || totalPages <= 1;
+
+  const pageList = document.getElementById(options.pageNumbersId);
+  pageList.replaceChildren();
+  if (!hasRows) return;
+
+  const pageFragment = document.createDocumentFragment();
+  let previousPage = 0;
+  getPaginationPages(currentPage, totalPages).forEach(page => {
+    if (previousPage && page - previousPage > 1) {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'page-ellipsis';
+      ellipsis.textContent = '…';
+      ellipsis.setAttribute('aria-hidden', 'true');
+      pageFragment.appendChild(ellipsis);
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'page-number' + (page === currentPage ? ' is-current' : '');
+    button.textContent = String(page);
+    button.setAttribute('aria-label', 'Buka halaman ' + page);
+    if (page === currentPage) {
+      button.setAttribute('aria-current', 'page');
+    } else {
+      button.addEventListener('click', () => options.onPageChange(page));
+    }
+    pageFragment.appendChild(button);
+    previousPage = page;
+  });
+  pageList.appendChild(pageFragment);
+}
+
+function scrollTableToTop(tabPaneId) {
+  const tableWrap = document.querySelector('#' + tabPaneId + ' .table-wrap');
+  if (!tableWrap) return;
+  const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  tableWrap.scrollTo({ top: 0, left: tableWrap.scrollLeft, behavior: smooth ? 'smooth' : 'auto' });
+}
+
 const TOAST_ICON = { success: '✅', error: '⚠️', info: 'ℹ️' };
 function showToast(message, type) {
   const container = document.getElementById('toastContainer');
@@ -522,141 +1026,654 @@ function showToast(message, type) {
   }, 3800);
 }
 
+/* ========================================================================== 
+   SEARCHABLE SELECT
+   ========================================================================== */
+const SEARCH_SELECT_RENDER_LIMIT = 150;
+
+class SearchableSelect {
+  constructor(select) {
+    this.select = select;
+    this.highlightedIndex = -1;
+    this.wrapper = document.createElement('div');
+    this.wrapper.className = 'search-select';
+    this.wrapper.innerHTML =
+      '<button type="button" class="search-select-trigger" aria-haspopup="listbox" aria-expanded="false"></button>' +
+      '<div class="search-select-menu">' +
+        '<div class="search-select-search-wrap">' +
+          '<input type="search" class="search-select-input" autocomplete="off" spellcheck="false">' +
+          '<button type="button" class="search-select-clear" aria-label="Hapus pencarian">&times;</button>' +
+        '</div>' +
+        '<div class="search-select-options" role="listbox"></div>' +
+      '</div>';
+
+    select.parentNode.insertBefore(this.wrapper, select);
+    this.wrapper.insertBefore(select, this.wrapper.firstChild);
+    select.classList.add('search-select-native');
+
+    this.trigger = this.wrapper.querySelector('.search-select-trigger');
+    this.search = this.wrapper.querySelector('.search-select-input');
+    this.clear = this.wrapper.querySelector('.search-select-clear');
+    this.optionsList = this.wrapper.querySelector('.search-select-options');
+    const label = select.getAttribute('aria-label') || 'pilihan';
+    this.search.placeholder = 'Cari ' + label.toLowerCase() + '...';
+    this.search.setAttribute('aria-label', 'Cari dalam ' + label.toLowerCase());
+
+    this.trigger.addEventListener('click', () => this.toggle());
+    this.search.addEventListener('input', () => {
+      this.clear.classList.toggle('visible', Boolean(this.search.value));
+      this.highlightedIndex = -1;
+      this.renderOptions();
+    });
+    this.clear.addEventListener('click', () => {
+      this.search.value = '';
+      this.clear.classList.remove('visible');
+      this.renderOptions();
+      this.search.focus();
+    });
+    this.wrapper.addEventListener('keydown', event => this.handleKeydown(event));
+    select.addEventListener('change', () => this.sync());
+
+    this.observer = new MutationObserver(() => this.sync());
+    this.observer.observe(select, { childList: true, subtree: true, characterData: true });
+    this.sync();
+  }
+
+  sync() {
+    const selected = this.select.options[this.select.selectedIndex];
+    this.trigger.textContent = selected ? selected.textContent : 'Pilih...';
+    this.trigger.title = this.trigger.textContent;
+    if (this.wrapper.classList.contains('open')) {
+      this.renderOptions();
+    } else {
+      this.optionsList.replaceChildren();
+    }
+  }
+
+  getMatchingOptions() {
+    const query = this.search.value.trim().toLocaleLowerCase('id');
+    return Array.from(this.select.options).filter(option =>
+      !query || option.textContent.toLocaleLowerCase('id').includes(query)
+    );
+  }
+
+  getVisibleOptions() {
+    return this.getMatchingOptions().slice(0, SEARCH_SELECT_RENDER_LIMIT);
+  }
+
+  renderOptions() {
+    const matchingOptions = this.getMatchingOptions();
+    const options = matchingOptions.slice(0, SEARCH_SELECT_RENDER_LIMIT);
+    this.optionsList.innerHTML = '';
+    if (!options.length) {
+      this.optionsList.innerHTML = '<div class="search-select-empty">Tidak ada pilihan ditemukan</div>';
+      return;
+    }
+    options.forEach((option, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'search-select-option' +
+        (option.selected ? ' selected' : '') +
+        (index === this.highlightedIndex ? ' highlighted' : '');
+      button.textContent = option.textContent;
+      button.setAttribute('role', 'option');
+      button.setAttribute('aria-selected', option.selected ? 'true' : 'false');
+      button.addEventListener('click', () => this.choose(option.value));
+      this.optionsList.appendChild(button);
+    });
+    if (matchingOptions.length > SEARCH_SELECT_RENDER_LIMIT) {
+      const hint = document.createElement('div');
+      hint.className = 'search-select-empty';
+      hint.textContent = 'Ketik pencarian untuk melihat ' + (matchingOptions.length - SEARCH_SELECT_RENDER_LIMIT) + ' pilihan lainnya.';
+      this.optionsList.appendChild(hint);
+    }
+  }
+
+  choose(value) {
+    if (this.select.value !== value) {
+      this.select.value = value;
+      this.select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    this.close();
+    this.trigger.focus();
+  }
+
+  open() {
+    document.querySelectorAll('.search-select.open').forEach(el => {
+      if (el !== this.wrapper && el.searchableSelect) el.searchableSelect.close();
+    });
+    this.wrapper.classList.add('open');
+    this.trigger.setAttribute('aria-expanded', 'true');
+    this.highlightedIndex = -1;
+    this.renderOptions();
+    requestAnimationFrame(() => this.search.focus());
+  }
+
+  close() {
+    this.wrapper.classList.remove('open');
+    this.trigger.setAttribute('aria-expanded', 'false');
+    this.search.value = '';
+    this.clear.classList.remove('visible');
+    this.highlightedIndex = -1;
+  }
+
+  toggle() { this.wrapper.classList.contains('open') ? this.close() : this.open(); }
+
+  handleKeydown(event) {
+    if (event.key === 'Escape') {
+      this.close();
+      this.trigger.focus();
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) return;
+    event.preventDefault();
+    if (!this.wrapper.classList.contains('open')) {
+      this.open();
+      return;
+    }
+    const options = this.getVisibleOptions();
+    if (!options.length) return;
+    if (event.key === 'Enter' && this.highlightedIndex >= 0) {
+      this.choose(options[this.highlightedIndex].value);
+      return;
+    }
+    const direction = event.key === 'ArrowUp' ? -1 : 1;
+    this.highlightedIndex = (this.highlightedIndex + direction + options.length) % options.length;
+    this.renderOptions();
+    const highlighted = this.optionsList.querySelector('.highlighted');
+    if (highlighted) highlighted.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+document.querySelectorAll('.topbar-filter select').forEach(select => {
+  const searchableSelect = new SearchableSelect(select);
+  searchableSelect.wrapper.searchableSelect = searchableSelect;
+});
+document.addEventListener('click', event => {
+  document.querySelectorAll('.search-select.open').forEach(el => {
+    if (!el.contains(event.target) && el.searchableSelect) el.searchableSelect.close();
+  });
+});
+
 /* ==========================================================================
    1. SIDEBAR
    ========================================================================== */
 const sidebarEl     = document.getElementById('sidebar');
 const sidebarToggle = document.getElementById('sidebarToggle');
 
-function setSidebarCollapsed(collapsed) {
+let sidebarAnimationTimer = null;
+
+function setSidebarCollapsed(collapsed, animate = true) {
+  if (!animate) {
+    sidebarEl.classList.add('no-transition');
+  } else {
+    sidebarEl.classList.add('is-animating');
+    clearTimeout(sidebarAnimationTimer);
+    sidebarAnimationTimer = setTimeout(() => {
+      sidebarEl.classList.remove('is-animating');
+    }, 400);
+  }
+
   sidebarEl.classList.toggle('collapsed', collapsed);
+  sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  sidebarToggle.title = collapsed ? 'Buka menu' : 'Lipat menu';
+
   try { localStorage.setItem('bitransSidebarCollapsed', collapsed ? '1' : '0'); } catch (e) {}
+
+  if (!animate) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => sidebarEl.classList.remove('no-transition'));
+    });
+  }
 }
+
 sidebarToggle.addEventListener('click', () => {
-  setSidebarCollapsed(!sidebarEl.classList.contains('collapsed'));
+  setSidebarCollapsed(!sidebarEl.classList.contains('collapsed'), true);
 });
+
 (function initSidebar() {
   let collapsed = window.innerWidth < 900;
   try {
     const saved = localStorage.getItem('bitransSidebarCollapsed');
     if (saved !== null) collapsed = saved === '1';
   } catch (e) {}
-  setSidebarCollapsed(collapsed);
+  setSidebarCollapsed(collapsed, false);
 })();
 
 /* ==========================================================================
    2. DASHBOARD 1 — MONITORING REKON
    ========================================================================== */
 
-let rawData          = [];
-let lastServerUpdate  = null;
+let rawData = [];
+let monitoringMonths = [];
+let lastServerUpdate = null;
 let rekonRealtimeBusy = false;
-let sortByNonRekon   = false; // status sorting
+let rekonDataBusy = false;
+let sortByNonRekon = false;
+let rekonCurrentPage = 1;
+let rekonSearchTimer = null;
+let activeRekonMonth = '';
 
-google.script.run
-  .withSuccessHandler(initRekon)
-  .withFailureHandler(err => console.error('Load Rekon error:', err))
-  .getMonitoringData();
+let REKON_ROWS_PER_PAGE = 20;
+let REKON_POLL_INTERVAL_MS = 60000;
+let rekonPollTimer = null;
+const REKON_SESSION_CACHE_KEY = 'REKON_SESSION_V3';
+const REKON_SESSION_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
+const rekonMonthCache = new Map();
 
-function initRekon(res) {
-  rawData = res.monitoring || [];
-  document.getElementById('lastUpdate').innerText = res.lastUpdate || "-";
-  lastServerUpdate = res.lastUpdate;
-  buildRekonFilters();
+function setRekonLoading(message) {
+  const monitorEl = document.getElementById('monitor');
+  const tableWrap = monitorEl.closest('.table-wrap');
+  const indicator = document.getElementById('rekonRefreshIndicator');
+  if (indicator) indicator.hidden = true;
+  if (tableWrap) {
+    tableWrap.setAttribute('aria-busy', 'true');
+    tableWrap.scrollTo({ top: 0, left: 0 });
+  }
+  monitorEl.innerHTML =
+    '<div class="loading-state" role="status" aria-live="polite">' +
+      '<div class="spinner" aria-hidden="true"></div>' +
+      '<span>' + escapeHtml(message || 'Memuat data monitoring...') + '</span>' +
+    '</div>';
+}
+
+function setRekonLoadError(message) {
+  const monitorEl = document.getElementById('monitor');
+  const tableWrap = monitorEl.closest('.table-wrap');
+  const indicator = document.getElementById('rekonRefreshIndicator');
+  if (indicator) indicator.hidden = true;
+  if (tableWrap) tableWrap.setAttribute('aria-busy', 'false');
+  monitorEl.innerHTML =
+    '<div class="empty-state content-fade">' +
+      '<div class="empty-icon">⚠️</div>' +
+      '<div class="empty-title">Gagal memuat data monitoring</div>' +
+      '<div class="empty-sub">' + escapeHtml(message || 'Coba klik tombol Refresh beberapa saat lagi.') + '</div>' +
+    '</div>';
+}
+
+function requestMonitoringData(month, forceRefresh, handlers) {
+  handlers = handlers || {};
+  if (rekonDataBusy) {
+    if (handlers.busy) handlers.busy();
+    return false;
+  }
+
+  rekonDataBusy = true;
+  google.script.run
+    .withSuccessHandler(function(result) {
+      rekonDataBusy = false;
+      if (!result || result.error) {
+        const error = new Error(result && result.error ? result.error : 'Respons monitoring tidak valid.');
+        if (handlers.failure) handlers.failure(error);
+        return;
+      }
+      if (handlers.success) handlers.success(result);
+    })
+    .withFailureHandler(function(error) {
+      rekonDataBusy = false;
+      if (handlers.failure) handlers.failure(error);
+    })
+    .getMonitoringData(month || '', Boolean(forceRefresh));
+
+  return true;
+}
+
+function applyRekonResponse(result, options) {
+  options = options || {};
+  if (!options.skipSessionCache) saveRekonSessionCache(result);
+  rawData = result.monitoring || [];
+  monitoringMonths = (result.months && result.months.length)
+    ? result.months.slice()
+    : monitoringMonths;
+
+  const selectedMonth =
+    result.selectedMonth ||
+    document.getElementById('month').value ||
+    monitoringMonths[0] ||
+    '';
+
+  activeRekonMonth = selectedMonth;
+
+  if (selectedMonth) {
+    rekonMonthCache.set(selectedMonth, {
+      monitoring: rawData.slice(),
+      lastUpdate: result.lastUpdate || '-',
+      updateToken: result.updateToken || lastServerUpdate
+    });
+  }
+
+  document.getElementById('lastUpdate').innerText = result.lastUpdate || '-';
+  if (result.updateToken) lastServerUpdate = result.updateToken;
+  if (!options.keepPage) rekonCurrentPage = 1;
+
+  buildRekonFilters(selectedMonth);
   renderRekon();
 }
 
-function buildRekonFilters() {
-  const monthSel    = document.getElementById('month');
+function initRekon(result) {
+  applyRekonResponse(result);
+}
+
+function saveRekonSessionCache(result) {
+  try {
+    sessionStorage.setItem(REKON_SESSION_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      monitoring: result.monitoring || [],
+      months: result.months || [],
+      selectedMonth: result.selectedMonth || '',
+      lastUpdate: result.lastUpdate || '-',
+      updateToken: result.updateToken || ''
+    }));
+  } catch (error) {
+    console.warn('Session cache monitoring tidak tersedia:', error);
+  }
+}
+
+function getRekonSessionCache() {
+  try {
+    const raw = sessionStorage.getItem(REKON_SESSION_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (!cached || !Array.isArray(cached.monitoring) ||
+        Date.now() - Number(cached.savedAt) > REKON_SESSION_CACHE_MAX_AGE_MS) {
+      sessionStorage.removeItem(REKON_SESSION_CACHE_KEY);
+      return null;
+    }
+    return cached;
+  } catch (error) {
+    return null;
+  }
+}
+
+function loadInitialRekon() {
+  const sessionCache = getRekonSessionCache();
+  if (sessionCache) {
+    applyRekonResponse(sessionCache, { skipSessionCache: true });
+    setRekonRefreshing(true, 'Memeriksa pembaruan data...');
+  } else {
+    setRekonLoading('Memuat data monitoring...');
+  }
+  requestMonitoringData(sessionCache ? sessionCache.selectedMonth : '', false, {
+    success: function(result) {
+      setRekonRefreshing(false);
+      initRekon(result);
+      if (result.performance) console.info('[Monitoring load]', result.performance);
+    },
+    failure: function(error) {
+      setRekonRefreshing(false);
+      if (!sessionCache) setRekonLoadError(error.message);
+      showToast('Load monitoring gagal: ' + error.message, 'error');
+    }
+  });
+}
+
+const MONTH_NAMES_ID = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+function formatMonthLabel(monthKey) {
+  const match = String(monthKey || '').match(/^(\d{4})-(\d{2})$/);
+  if (!match) return monthKey || '-';
+
+  const monthIndex = Number(match[2]) - 1;
+  if (monthIndex < 0 || monthIndex >= MONTH_NAMES_ID.length) return monthKey;
+
+  return MONTH_NAMES_ID[monthIndex] + ' ' + match[1];
+}
+
+function setRekonRefreshing(isRefreshing, message) {
+  const table = document.querySelector('#monitor table');
+  const tableWrap = document.querySelector('#tabRekon .table-wrap');
+  const indicator = document.getElementById('rekonRefreshIndicator');
+  const indicatorText = document.getElementById('rekonRefreshText');
+  if (table) table.classList.toggle('is-refreshing', Boolean(isRefreshing));
+  if (tableWrap) tableWrap.setAttribute('aria-busy', String(Boolean(isRefreshing)));
+  if (indicatorText && message) indicatorText.textContent = message;
+  if (indicator) indicator.hidden = !isRefreshing;
+}
+
+function replaceSelectOptions(select, options) {
+  const fragment = document.createDocumentFragment();
+  options.forEach(function(optionData) {
+    const option = document.createElement('option');
+    option.value = optionData.value;
+    option.textContent = optionData.label;
+    fragment.appendChild(option);
+  });
+  select.replaceChildren(fragment);
+}
+
+function setSelectValueSilently(select, value) {
+  select.value = value;
+  const wrapper = select.closest('.search-select');
+  if (wrapper && wrapper.searchableSelect) wrapper.searchableSelect.sync();
+}
+
+function buildRekonFilters(selectedMonth) {
+  const monthSel = document.getElementById('month');
   const customerSel = document.getElementById('customer');
-  const opSel       = document.getElementById('op');
-  const tohSel      = document.getElementById('toh');
+  const opSel = document.getElementById('op');
+  const tohSel = document.getElementById('toh');
 
-  const prevMonth    = monthSel.value;
   const prevCustomer = customerSel.value;
-  const prevOp       = opSel.value;
-  const prevToh      = tohSel.value;
+  const prevOp = opSel.value;
+  const prevToh = tohSel.value;
 
-  monthSel.innerHTML    = "";
-  customerSel.innerHTML = "<option value='ALL'>Semua Customer</option>";
-  opSel.innerHTML       = "<option value='ALL'>Semua OP</option>";
-  tohSel.innerHTML      = "<option value='ALL'>Semua TOH/WOH</option>";
+  replaceSelectOptions(monthSel, monitoringMonths.map(function(month) {
+    return { value: month, label: formatMonthLabel(month) };
+  }));
+  if (selectedMonth && monitoringMonths.indexOf(selectedMonth) > -1) {
+    monthSel.value = selectedMonth;
+  }
 
-  const months = [...new Set(rawData.map(x => x.month))].sort().reverse();
-  months.forEach(m => monthSel.add(new Option(m, m)));
-  if (months.includes(prevMonth)) monthSel.value = prevMonth;
-
-  [...new Set(rawData.map(x => x.customer))].sort().forEach(c => customerSel.add(new Option(c, c)));
-  if ([...customerSel.options].some(o => o.value === prevCustomer)) customerSel.value = prevCustomer;
+  const customerOptions = Array.from(new Set(rawData.map(function(item) {
+    return item.customer;
+  }).filter(Boolean))).sort(function(a, b) {
+    return a.localeCompare(b, 'id', { numeric: true });
+  }).map(function(customer) {
+    return { value: customer, label: customer };
+  });
+  replaceSelectOptions(customerSel, [{ value: 'ALL', label: 'Semua Customer' }].concat(customerOptions));
+  if (Array.from(customerSel.options).some(function(option) {
+    return option.value === prevCustomer;
+  })) customerSel.value = prevCustomer;
 
   const opMap = {};
-  rawData.forEach(r => { if (!opMap[r.op]) opMap[r.op] = r.namaop; });
-  Object.entries(opMap)
-    .sort((a, b) => a[1].localeCompare(b[1]))
-    .forEach(([k, n]) => opSel.add(new Option(n, k)));
-  if ([...opSel.options].some(o => o.value === prevOp)) opSel.value = prevOp;
+  rawData.forEach(function(item) {
+    if (!opMap[item.op]) opMap[item.op] = item.namaop;
+  });
+  const opOptions = Object.entries(opMap)
+    .sort(function(a, b) {
+      return String(a[1]).localeCompare(String(b[1]), 'id', { numeric: true });
+    })
+    .map(function(entry) {
+      return { value: entry[0], label: entry[1] };
+    });
+  replaceSelectOptions(opSel, [{ value: 'ALL', label: 'Semua OP' }].concat(opOptions));
+  if (Array.from(opSel.options).some(function(option) {
+    return option.value === prevOp;
+  })) opSel.value = prevOp;
 
-  [...new Set(rawData.map(x => x.toh))].sort().forEach(t => tohSel.add(new Option(t, t)));
-  if ([...tohSel.options].some(o => o.value === prevToh)) tohSel.value = prevToh;
+  const tohOptions = Array.from(new Set(rawData.map(function(item) {
+    return item.toh;
+  }).filter(Boolean))).sort(function(a, b) {
+    return a.localeCompare(b, 'id', { numeric: true });
+  }).map(function(toh) {
+    return { value: toh, label: toh };
+  });
+  replaceSelectOptions(tohSel, [{ value: 'ALL', label: 'Semua TOH/WOH' }].concat(tohOptions));
+  if (Array.from(tohSel.options).some(function(option) {
+    return option.value === prevToh;
+  })) tohSel.value = prevToh;
 
-  document.getElementById('periode').innerText = monthSel.value;
+  document.getElementById('periode').innerText = formatMonthLabel(monthSel.value);
 
-  monthSel.onchange    = renderRekon;
-  customerSel.onchange = renderRekon;
-  opSel.onchange       = renderRekon;
-  tohSel.onchange      = renderRekon;
+  monthSel.onchange = function() {
+    changeRekonMonth(monthSel.value);
+  };
+  customerSel.onchange = function() {
+    rekonCurrentPage = 1;
+    renderRekon();
+  };
+  opSel.onchange = function() {
+    rekonCurrentPage = 1;
+    renderRekon();
+  };
+  tohSel.onchange = function() {
+    rekonCurrentPage = 1;
+    renderRekon();
+  };
 
-  let searchTimer = null;
-  document.getElementById('search').oninput = () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(renderRekon, 180);
+  document.getElementById('search').oninput = function() {
+    clearTimeout(rekonSearchTimer);
+    rekonSearchTimer = setTimeout(function() {
+      rekonCurrentPage = 1;
+      renderRekon();
+    }, 180);
   };
 }
 
-function getRekonFilteredData() {
-  let d = rawData.filter(x => x.month === document.getElementById('month').value);
-  const customer = document.getElementById('customer').value;
-  const op       = document.getElementById('op').value;
-  const toh      = document.getElementById('toh').value;
-  const search   = document.getElementById('search').value.toLowerCase();
+function changeRekonMonth(month) {
+  rekonCurrentPage = 1;
+  const cachedMonth = rekonMonthCache.get(month);
+  const previousMonth = activeRekonMonth;
 
-  if (customer !== "ALL") d = d.filter(x => x.customer === customer);
-  if (op       !== "ALL") d = d.filter(x => x.op       === op);
-  if (toh      !== "ALL") d = d.filter(x => x.toh      === toh);
-  if (search) {
-    d = d.filter(x =>
-      (x.op       || '').toLowerCase().includes(search) ||
-      (x.namaop   || '').toLowerCase().includes(search) ||
-      (x.customer || '').toLowerCase().includes(search) ||
-      (x.toh      || '').toLowerCase().includes(search) ||
-      (x.produk   || '').toLowerCase().includes(search) ||
-      (x.status   || '').toLowerCase().includes(search)
-    );
+  if (cachedMonth && cachedMonth.updateToken === lastServerUpdate) {
+    applyRekonResponse({
+      monitoring: cachedMonth.monitoring,
+      months: monitoringMonths,
+      selectedMonth: month,
+      lastUpdate: cachedMonth.lastUpdate,
+      updateToken: cachedMonth.updateToken
+    });
+    return;
   }
-  return d;
-}
 
-// ===== Render dengan sorting =====
-function renderRekon() {
-  const data = getRekonFilteredData();
-  document.getElementById('periode').innerText = document.getElementById('month').value;
-
-  const rowMeta   = new Map();
-  const rowHasNon = new Set();
-  const cellMap   = new Map();
-
-  data.forEach(r => {
-    const rowKey = r.op + "||" + r.customer + "||" + r.produk;
-    if (!rowMeta.has(rowKey)) rowMeta.set(rowKey, r);
-    if (r.status !== "Rekon") rowHasNon.add(rowKey);
-    cellMap.set(rowKey + "|" + parseInt(r.day), r);
+  const started = requestMonitoringData(month, false, {
+    success: function(result) {
+      setRekonRefreshing(false);
+      applyRekonResponse(result);
+    },
+    failure: function(error) {
+      setRekonRefreshing(false);
+      if (previousMonth) {
+        setSelectValueSilently(document.getElementById('month'), previousMonth);
+        renderRekon();
+      } else {
+        setRekonLoadError(error.message);
+      }
+      showToast('Gagal memuat periode: ' + error.message, 'error');
+    },
+    busy: function() {
+      if (previousMonth) {
+        setSelectValueSilently(document.getElementById('month'), previousMonth);
+      }
+      showToast('Periode lain masih sedang dimuat.', 'info');
+    }
   });
 
-  let rows = [...rowMeta.keys()];
-  const days = [...new Set(data.map(x => parseInt(x.day)))].sort((a, b) => a - b);
+  if (started) {
+    if (rawData.length) {
+      setRekonRefreshing(true, 'Memuat periode ' + formatMonthLabel(month) + '...');
+    } else {
+      setRekonLoading('Memuat periode ' + formatMonthLabel(month) + '...');
+    }
+  }
+}
+
+function getRekonFilteredData() {
+  let data = rawData.filter(function(item) {
+    return item.month === document.getElementById('month').value;
+  });
+  const customer = document.getElementById('customer').value;
+  const op = document.getElementById('op').value;
+  const toh = document.getElementById('toh').value;
+  const search = document.getElementById('search').value.toLowerCase();
+
+  if (customer !== 'ALL') data = data.filter(function(item) {
+    return item.customer === customer;
+  });
+  if (op !== 'ALL') data = data.filter(function(item) {
+    return item.op === op;
+  });
+  if (toh !== 'ALL') data = data.filter(function(item) {
+    return item.toh === toh;
+  });
+  if (search) {
+    data = data.filter(function(item) {
+      return [
+        item.op, item.namaop, item.customer,
+        item.toh, item.produk, item.status
+      ].join(' ').toLowerCase().includes(search);
+    });
+  }
+  return data;
+}
+
+function updateRekonPages(totalRows) {
+  const totalPages = Math.ceil(totalRows / REKON_ROWS_PER_PAGE);
+  if (rekonCurrentPage > (totalPages || 1)) rekonCurrentPage = totalPages || 1;
+
+  updatePaginationUI({
+    currentPage: rekonCurrentPage,
+    totalPages: totalPages,
+    totalRows: totalRows,
+    totalRowsId: 'rekon-totalRows',
+    totalPagesId: 'rekon-totalPages',
+    prevButtonId: 'rekon-prevBtn',
+    nextButtonId: 'rekon-nextBtn',
+    pageSelectId: 'rekon-pageSelect',
+    pageNumbersId: 'rekon-pageNumbers',
+    onPageChange: rekonGoToPage
+  });
+}
+
+function isRekonStatus(value) {
+  return String(value || '').trim().toLowerCase() === 'rekon';
+}
+
+function getRekonRowKey(item) {
+  return JSON.stringify([
+    item.op || '',
+    item.namaop || '',
+    item.customer || '',
+    item.produk || '',
+    item.toh || ''
+  ]);
+}
+
+function renderRekon() {
+  const data = getRekonFilteredData();
+  document.getElementById('periode').innerText = formatMonthLabel(document.getElementById('month').value);
+  const monitoringWrap = document.querySelector('#tabRekon .table-wrap');
+  if (monitoringWrap) monitoringWrap.setAttribute('aria-busy', 'false');
+
+  const rowMeta = new Map();
+  const rowHasNon = new Set();
+  const cellMap = new Map();
+
+  data.forEach(function(item) {
+    const rowKey = getRekonRowKey(item);
+    if (!rowMeta.has(rowKey)) rowMeta.set(rowKey, item);
+    if (!isRekonStatus(item.status)) rowHasNon.add(rowKey);
+
+    const cellKey = rowKey + '|' + parseInt(item.day, 10);
+    const current = cellMap.get(cellKey);
+    if (!current || (isRekonStatus(current.status) && !isRekonStatus(item.status))) {
+      cellMap.set(cellKey, item);
+    }
+  });
+
+  let rows = Array.from(rowMeta.keys());
+  const days = Array.from(new Set(data.map(function(item) {
+    return parseInt(item.day, 10);
+  }))).sort(function(a, b) {
+    return a - b;
+  });
   const monitorEl = document.getElementById('monitor');
 
-  if (rows.length === 0) {
+  if (!rows.length) {
     monitorEl.innerHTML =
       '<div class="empty-state content-fade">' +
         '<div class="empty-icon">🗂️</div>' +
@@ -664,212 +1681,302 @@ function renderRekon() {
         '<div class="empty-sub">Coba ubah bulan, customer, OP, atau kata kunci pencarian.</div>' +
       '</div>';
     updateRekonStats(data);
-    document.getElementById("downloadBtn").disabled = true;
+    updateRekonPages(0);
+    document.getElementById('downloadBtn').disabled = true;
     return;
   }
 
-  // ===== SORTING: Non Rekon terlama (hari terkecil) di atas, lalu jumlah terbanyak =====
   if (sortByNonRekon) {
-    // Buat array info untuk setiap rowKey
-    const rowInfo = rows.map(rowKey => {
+    const rowInfo = rows.map(function(rowKey) {
       let minDay = Infinity;
       let count = 0;
-      days.forEach(day => {
-        const r = cellMap.get(rowKey + "|" + day);
-        if (r && r.status !== "Rekon") {
+      days.forEach(function(day) {
+        const item = cellMap.get(rowKey + '|' + day);
+        if (item && !isRekonStatus(item.status)) {
           count++;
           if (day < minDay) minDay = day;
         }
       });
-      return { rowKey, minDay, count };
+      return { rowKey: rowKey, minDay: minDay, count: count };
     });
 
-    // Urutkan: minDay ascending (terlama di atas), lalu count descending (tie-breaker)
-    rowInfo.sort((a, b) => {
+    rowInfo.sort(function(a, b) {
       if (a.minDay !== b.minDay) return a.minDay - b.minDay;
       return b.count - a.count;
     });
-
-    // Ambil rowKey dari hasil sorting
-    rows = rowInfo.map(info => info.rowKey);
+    rows = rowInfo.map(function(info) {
+      return info.rowKey;
+    });
   }
 
+  const totalPages = Math.ceil(rows.length / REKON_ROWS_PER_PAGE) || 1;
+  if (rekonCurrentPage > totalPages) rekonCurrentPage = totalPages;
+  const start = (rekonCurrentPage - 1) * REKON_ROWS_PER_PAGE;
+  const pageRows = rows.slice(start, start + REKON_ROWS_PER_PAGE);
+
   const out = [];
-  out.push("<table><thead><tr>");
+  out.push('<table><thead><tr>');
   out.push("<th class='sticky col-op'>Kode OP</th>");
   out.push("<th class='sticky col-nama'>Nama OP</th>");
   out.push("<th class='sticky col-customer'>Customer</th>");
   out.push("<th class='sticky col-produk'>Produk</th>");
   out.push("<th class='sticky col-toh'>TOH</th>");
-  days.forEach(d => out.push("<th class='col-day'>" + d + "</th>"));
-  out.push("</tr></thead><tbody>");
+  days.forEach(function(day) {
+    out.push("<th class='col-day'>" + day + '</th>');
+  });
+  out.push('</tr></thead><tbody>');
 
-  rows.forEach(rowKey => {
-    const first  = rowMeta.get(rowKey);
+  pageRows.forEach(function(rowKey) {
+    const first = rowMeta.get(rowKey);
     const hasNon = rowHasNon.has(rowKey);
-    const [opVal, custVal, prodVal] = rowKey.split("||");
+    const opValue = first.op;
+    const customerValue = first.customer;
+    const productValue = first.produk;
 
-    out.push(`<tr class="${hasNon ? 'row-warning' : ''}">`);
-    out.push(`<td class='sticky col-op text-left' title="${escapeHtml(opVal)}">${escapeHtml(opVal)}</td>`);
-    out.push(`<td class='sticky col-nama text-left' title="${escapeHtml(first.namaop)}">${escapeHtml(first.namaop)}</td>`);
-    out.push(`<td class='sticky col-customer text-left' title="${escapeHtml(custVal)}">${escapeHtml(custVal)}</td>`);
-    out.push(`<td class='sticky col-produk text-left' title="${escapeHtml(prodVal)}">${escapeHtml(prodVal)}</td>`);
-    out.push(`<td class='sticky col-toh text-left' title="${escapeHtml(first.toh)}">${escapeHtml(first.toh)}</td>`);
+    out.push('<tr class="' + (hasNon ? 'row-warning' : '') + '">');
+    out.push("<td class='sticky col-op text-left' title='" + escapeHtml(opValue) + "'>" + escapeHtml(opValue) + '</td>');
+    out.push("<td class='sticky col-nama text-left' title='" + escapeHtml(first.namaop) + "'>" + escapeHtml(first.namaop) + '</td>');
+    out.push("<td class='sticky col-customer text-left' title='" + escapeHtml(customerValue) + "'>" + escapeHtml(customerValue) + '</td>');
+    out.push("<td class='sticky col-produk text-left' title='" + escapeHtml(productValue) + "'>" + escapeHtml(productValue) + '</td>');
+    out.push("<td class='sticky col-toh text-left' title='" + escapeHtml(first.toh) + "'>" + escapeHtml(first.toh) + '</td>');
 
-    days.forEach(day => {
-      const r = cellMap.get(rowKey + "|" + day);
-      if (!r)                        out.push("<td><span class='tidak'>–</span></td>");
-      else if (r.status === "Rekon") out.push("<td><span class='rekon'>✔</span></td>");
-      else                            out.push("<td><span class='non'>!</span></td>");
+    days.forEach(function(day) {
+      const item = cellMap.get(rowKey + '|' + day);
+      if (!item) out.push("<td><span class='tidak'>–</span></td>");
+      else if (isRekonStatus(item.status)) out.push("<td><span class='rekon'>✔</span></td>");
+      else out.push("<td><span class='non'>!</span></td>");
     });
-    out.push("</tr>");
+    out.push('</tr>');
   });
 
-  out.push("</tbody></table>");
-  monitorEl.innerHTML = out.join("");
-  monitorEl.firstElementChild.classList.add('content-fade');
+  out.push('</tbody></table>');
+  monitorEl.innerHTML = out.join('');
+  if (monitorEl.firstElementChild) monitorEl.firstElementChild.classList.add('content-fade');
+
   updateRekonStats(data);
-  document.getElementById("downloadBtn").disabled = (data.length === 0);
+  updateRekonPages(rows.length);
+  document.getElementById('downloadBtn').disabled = data.length === 0;
 }
 
-// ===== Toggle sort =====
+function rekonGoToPage(page) {
+  const totalRows = new Set(getRekonFilteredData().map(function(item) {
+    return getRekonRowKey(item);
+  })).size;
+  const totalPages = Math.max(1, Math.ceil(totalRows / REKON_ROWS_PER_PAGE));
+  const nextPage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+  if (nextPage === rekonCurrentPage) return;
+  rekonCurrentPage = nextPage;
+  renderRekon();
+  scrollTableToTop('tabRekon');
+}
+
+function rekonPrevPage() { rekonGoToPage(rekonCurrentPage - 1); }
+
+function rekonNextPage() {
+  rekonGoToPage(rekonCurrentPage + 1);
+}
+
 function toggleSortNon() {
   sortByNonRekon = !sortByNonRekon;
-  const btn = document.getElementById('sortNonBtn');
+  rekonCurrentPage = 1;
+  const button = document.getElementById('sortNonBtn');
+
   if (sortByNonRekon) {
-    btn.classList.add('active');
-    btn.innerText = '↕ Sort: ON';
+    button.classList.add('active');
+    button.innerText = '↕ Sort: ON';
   } else {
-    btn.classList.remove('active');
-    btn.innerText = '↕ Sort by Non Rekon';
+    button.classList.remove('active');
+    button.innerText = '↕ Sort by Non Rekon';
   }
   renderRekon();
 }
 
-function updateRekonStats(d) {
-  const totalOP       = new Set(d.map(x => x.op)).size;
-  const totalCustomer = new Set(d.map(x => x.customer)).size;
-  let rekon = 0, non = 0;
-  d.forEach(x => { if (x.status === "Rekon") rekon++; else non++; });
+function updateRekonStats(data) {
+  const totalOP = new Set(data.map(function(item) { return item.op; })).size;
+  const totalCustomer = new Set(data.map(function(item) { return item.customer; })).size;
+  let rekon = 0;
+  let non = 0;
+
+  data.forEach(function(item) {
+    if (isRekonStatus(item.status)) rekon++;
+    else non++;
+  });
 
   document.getElementById('stats').innerHTML =
-    `<div class="stat-chip"><span class="dot dot-blue"></span>Total OP <b>${totalOP}</b></div>` +
-    `<div class="stat-chip"><span class="dot dot-purple"></span>Customer <b>${totalCustomer}</b></div>` +
-    `<div class="stat-chip"><span class="dot dot-green"></span>Rekon <b>${rekon}</b></div>` +
-    `<div class="stat-chip"><span class="dot dot-amber"></span>Non Rekon <b>${non}</b></div>`;
+    '<div class="stat-chip"><span class="dot dot-blue"></span>Total OP <b>' + totalOP + '</b></div>' +
+    '<div class="stat-chip"><span class="dot dot-purple"></span>Customer <b>' + totalCustomer + '</b></div>' +
+    '<div class="stat-chip"><span class="dot dot-green"></span>Rekon <b>' + rekon + '</b></div>' +
+    '<div class="stat-chip"><span class="dot dot-amber"></span>Non Rekon <b>' + non + '</b></div>';
 }
 
 function refreshRekonData() {
-  const btn = document.getElementById('refreshBtn');
-  btn.disabled  = true;
-  btn.innerText = "⏳ Loading...";
+  const button = document.getElementById('refreshBtn');
+  const selectedMonth = document.getElementById('month').value;
+  if (rekonDataBusy) {
+    showToast('Proses pemuatan data sebelumnya masih berjalan.', 'info');
+    return;
+  }
+  button.disabled = true;
+  button.innerText = '⏳ Loading...';
+  rekonMonthCache.clear();
 
-  google.script.run
-    .withSuccessHandler(res => {
-      rawData = res.monitoring || [];
-      document.getElementById('lastUpdate').innerText = res.lastUpdate || "-";
-      lastServerUpdate = res.lastUpdate;
-      buildRekonFilters();
-      renderRekon();
-      btn.disabled  = false;
-      btn.innerText = "🔄 Refresh";
-      showToast("Data monitoring berhasil diperbarui.", "success");
-    })
-    .withFailureHandler(err => {
-      btn.disabled  = false;
-      btn.innerText = "🔄 Refresh";
-      showToast("Refresh gagal: " + err.message, "error");
-    })
-    .getMonitoringData();
+  const started = requestMonitoringData(selectedMonth, true, {
+    success: function(result) {
+      setRekonRefreshing(false);
+      applyRekonResponse(result);
+      button.disabled = false;
+      button.innerText = '🔄 Refresh';
+      showToast('Data monitoring berhasil diperbarui.', 'success');
+    },
+    failure: function(error) {
+      setRekonRefreshing(false);
+      button.disabled = false;
+      button.innerText = '🔄 Refresh';
+      if (rawData.length) renderRekon();
+      else setRekonLoadError(error.message);
+      showToast('Refresh gagal: ' + error.message, 'error');
+    },
+    busy: function() {
+      button.disabled = false;
+      button.innerText = '🔄 Refresh';
+      showToast('Proses pemuatan data sebelumnya masih berjalan.', 'info');
+    }
+  });
+
+  if (started) {
+    if (rawData.length) setRekonRefreshing(true);
+    else setRekonLoading('Memperbarui data monitoring...');
+  } else {
+    button.disabled = false;
+    button.innerText = '🔄 Refresh';
+  }
 }
 
 function downloadReport() {
-  const btn           = document.getElementById("downloadBtn");
-  const selectedMonth  = document.getElementById("month").value;
-  if (!selectedMonth) { showToast("Pilih bulan terlebih dahulu.", "error"); return; }
+  const button = document.getElementById('downloadBtn');
+  const selectedMonth = document.getElementById('month').value;
+  if (!selectedMonth) {
+    showToast('Pilih bulan terlebih dahulu.', 'error');
+    return;
+  }
 
-  btn.disabled  = true;
-  btn.innerText = "Downloading...";
+  button.disabled = true;
+  button.innerText = 'Downloading...';
 
   google.script.run
-    .withSuccessHandler(file => {
-      btn.disabled  = false;
-      btn.innerText = "⬇ Download";
-      if (!file || !file.data) { showToast("Tidak ada data untuk di-download.", "error"); return; }
+    .withSuccessHandler(function(file) {
+      button.disabled = false;
+      button.innerText = '⬇ Download';
+      if (!file || !file.data) {
+        showToast('Tidak ada data untuk di-download.', 'error');
+        return;
+      }
+
       try {
         const bytes = atob(file.data);
-        const arr   = new Uint8Array(bytes.length);
-        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-        const blob  = new Blob([arr], { type: file.mimeType });
-        const link  = document.createElement("a");
-        link.href     = URL.createObjectURL(blob);
+        const array = new Uint8Array(bytes.length);
+        for (let index = 0; index < bytes.length; index++) {
+          array[index] = bytes.charCodeAt(index);
+        }
+
+        const blob = new Blob([array], { type: file.mimeType });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
         link.download = file.fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
-        showToast("Laporan berhasil diunduh.", "success");
-      } catch (e) {
-        showToast("Gagal memproses file download: " + e.message, "error");
+        showToast('Laporan berhasil diunduh.', 'success');
+      } catch (error) {
+        showToast('Gagal memproses file download: ' + error.message, 'error');
       }
     })
-    .withFailureHandler(err => {
-      btn.disabled  = false;
-      btn.innerText = "⬇ Download";
-      showToast("Error: " + err.message, "error");
+    .withFailureHandler(function(error) {
+      button.disabled = false;
+      button.innerText = '⬇ Download';
+      showToast('Error: ' + error.message, 'error');
     })
     .downloadNonRekonReport(selectedMonth);
 }
 
+function shouldPollRekon() {
+  return !document.hidden &&
+    document.getElementById('tabRekon').classList.contains('active-pane');
+}
+
 function checkRealtimeUpdate() {
-  if (rekonRealtimeBusy) return;
+  if (!shouldPollRekon() || rekonRealtimeBusy || rekonDataBusy) return;
   rekonRealtimeBusy = true;
 
   google.script.run
-    .withSuccessHandler(serverTime => {
-      rekonRealtimeBusy = false;
-      if (!serverTime) return;
-      if (lastServerUpdate === null) { lastServerUpdate = serverTime; return; }
-
-      if (serverTime !== lastServerUpdate) {
-        const span = document.getElementById("lastUpdate");
-        span.style.color = "var(--amber)";
-        span.innerText   = "Updating...";
-
-        google.script.run
-          .withSuccessHandler(res => {
-            rawData          = res.monitoring || [];
-            lastServerUpdate = serverTime;
-            span.innerText   = res.lastUpdate || "-";
-            span.style.color = "var(--green)";
-            renderRekon();
-          })
-          .withFailureHandler(err => {
-            span.style.color = "var(--red)";
-            span.innerText   = "Gagal update";
-            console.error('Realtime update error:', err);
-          })
-          .getMonitoringData();
+    .withSuccessHandler(function(serverToken) {
+      if (!serverToken || serverToken === lastServerUpdate) {
+        rekonRealtimeBusy = false;
+        return;
       }
+
+      const lastUpdateElement = document.getElementById('lastUpdate');
+      lastUpdateElement.style.color = 'var(--amber)';
+      lastUpdateElement.innerText = 'Updating...';
+      rekonMonthCache.clear();
+
+      const started = requestMonitoringData(document.getElementById('month').value, false, {
+        success: function(result) {
+          applyRekonResponse(result, { keepPage: true });
+          lastUpdateElement.style.color = 'var(--green)';
+          rekonRealtimeBusy = false;
+        },
+        failure: function(error) {
+          lastUpdateElement.style.color = 'var(--red)';
+          lastUpdateElement.innerText = 'Gagal update';
+          rekonRealtimeBusy = false;
+          console.error('Realtime update error:', error);
+        },
+        busy: function() {
+          rekonRealtimeBusy = false;
+        }
+      });
+
+      if (!started) rekonRealtimeBusy = false;
     })
-    .withFailureHandler(err => {
+    .withFailureHandler(function(error) {
       rekonRealtimeBusy = false;
-      console.error('checkRealtimeUpdate error:', err);
+      console.error('checkRealtimeUpdate error:', error);
     })
     .getLastUpdate();
 }
-setInterval(checkRealtimeUpdate, 5000);
+
+function scheduleRekonPolling() {
+  if (rekonPollTimer) clearInterval(rekonPollTimer);
+  rekonPollTimer = setInterval(checkRealtimeUpdate, REKON_POLL_INTERVAL_MS);
+}
+
+requestAnimationFrame(function() {
+  loadInitialRekon();
+});
+scheduleRekonPolling();
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) checkRealtimeUpdate();
+});
 
 /* ==========================================================================
    3. DASHBOARD 2 — TRACKING SPJ
    ========================================================================== */
 
-let spjAllData        = [];
 let spjFilteredData   = [];
 let spjCurrentPage    = 1;
-const SPJ_ROWS_PER_PAGE = 20;
+let SPJ_ROWS_PER_PAGE = 20;
+const SPJ_SESSION_CACHE_KEY = 'SPJ_SESSION_V2';
+const SPJ_SESSION_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 let spjTanggalColumns = [];
 let spjSearchTimer    = null;
+let spjTotalRows      = 0;
+let spjTotalPages     = 1;
+let spjSummary        = { total: 0, process: 0, done: 0, noAdjustment: 0 };
+let spjRequestSequence = 0;
+let spjFiltersLoaded  = false;
+let spjHasRenderedData = false;
 
 function formatSPJDate(dateStr) {
   if (!dateStr || dateStr === 'Belum ada update' || dateStr === 'Error baca update') return dateStr;
@@ -887,6 +1994,36 @@ function formatSPJDate(dateStr) {
     + " - " + date.toLocaleTimeString('en-US', { hour12: false });
 }
 
+const RUPIAH_FORMATTER = new Intl.NumberFormat('id-ID', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0
+});
+
+function formatRupiah(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return '-';
+
+  let numericValue = value;
+  if (typeof value !== 'number') {
+    const text = String(value)
+      .trim()
+      .replace(/^Rp\.?\s*/i, '')
+      .replace(/\s+/g, '');
+
+    if (/^-?\d{1,3}(?:\.\d{3})+(?:,\d+)?$/.test(text)) {
+      numericValue = Number(text.replace(/\./g, '').replace(',', '.'));
+    } else if (/^-?\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(text)) {
+      numericValue = Number(text.replace(/,/g, ''));
+    } else if (/^-?\d+(?:[.,]\d+)?$/.test(text)) {
+      numericValue = Number(text.replace(',', '.'));
+    } else {
+      numericValue = Number.NaN;
+    }
+  }
+
+  if (!Number.isFinite(numericValue)) return escapeHtml(value);
+  return 'Rp ' + RUPIAH_FORMATTER.format(Math.round(numericValue));
+}
+
 function spjStatusBadge(value) {
   const v = (value || '').toString().trim().toLowerCase();
   if (!v) return '';
@@ -898,61 +2035,128 @@ function spjStatusBadge(value) {
 
 function onSPJSearchInput() {
   clearTimeout(spjSearchTimer);
-  spjSearchTimer = setTimeout(applySPJFilters, 180);
+  spjSearchTimer = setTimeout(applySPJFilters, 320);
 }
 
 function toggleSPJLoading(isLoading) {
   const loadingEl = document.getElementById('spjLoadingState');
   const tableEl   = document.getElementById('spj-dataTable');
-  if (loadingEl) loadingEl.style.display = isLoading ? 'flex' : 'none';
-  if (tableEl)   tableEl.style.display   = isLoading ? 'none' : 'table';
+  const tableWrap = loadingEl ? loadingEl.closest('.table-wrap') : null;
+  if (tableWrap) {
+    tableWrap.setAttribute('aria-busy', String(isLoading));
+    if (isLoading && !spjHasRenderedData) tableWrap.scrollTo({ top: 0, left: 0 });
+  }
+  const preserveCurrentTable = isLoading && spjHasRenderedData;
+  if (loadingEl) loadingEl.style.display = isLoading && !preserveCurrentTable ? 'flex' : 'none';
+  if (tableEl) {
+    tableEl.style.display = isLoading && !preserveCurrentTable ? 'none' : 'table';
+    tableEl.classList.toggle('is-refreshing', preserveCurrentTable);
+  }
 }
 
 function loadSPJData(isRefresh) {
+  const requestSequence = ++spjRequestSequence;
+  toggleSPJLoading(true);
   google.script.run
-    .withSuccessHandler(res => displaySPJData(res, isRefresh))
+    .withSuccessHandler(res => {
+      if (requestSequence !== spjRequestSequence) return;
+      displaySPJData(res, isRefresh);
+    })
     .withFailureHandler(err => {
+      if (requestSequence !== spjRequestSequence) return;
       toggleSPJLoading(false);
-      document.getElementById('spj-tableBody').innerHTML =
-        `<tr><td colspan="11" style="padding:0;">` +
-          `<div class="empty-state"><div class="empty-icon">⚠️</div>` +
-          `<div class="empty-title">Gagal memuat data SPJ</div>` +
-          `<div class="empty-sub">Coba klik tombol Refresh beberapa saat lagi.</div></div>` +
-        `</td></tr>`;
+      if (isRefresh) {
+        const refreshButton = document.getElementById('spjRefreshBtn');
+        refreshButton.disabled = false;
+        refreshButton.innerText = '🔄 Refresh';
+      }
+      if (!spjHasRenderedData) {
+        document.getElementById('spj-tableBody').innerHTML =
+          `<tr><td colspan="11" style="padding:0;">` +
+            `<div class="empty-state"><div class="empty-icon">⚠️</div>` +
+            `<div class="empty-title">Gagal memuat data SPJ</div>` +
+            `<div class="empty-sub">Coba klik tombol Refresh beberapa saat lagi.</div></div>` +
+          `</td></tr>`;
+      }
       showToast('Error SPJ: ' + err.message, 'error');
     })
-    .getSPJData();
+    .getSPJData({
+      forceRefresh: Boolean(isRefresh),
+      page: spjCurrentPage,
+      pageSize: SPJ_ROWS_PER_PAGE,
+      includeFilters: !spjFiltersLoaded || Boolean(isRefresh),
+      search: document.getElementById('spj-searchInput').value,
+      filters: {
+        kodeOP: document.getElementById('spj-filterOP').value,
+        customer: document.getElementById('spj-filterCustomer').value,
+        produk: document.getElementById('spj-filterProduk').value,
+        toh: document.getElementById('spj-filterTOH').value,
+        adjustment: document.getElementById('spj-filterAdjustment').value
+      }
+    });
 }
 
 function displaySPJData(result, isRefresh) {
-  if (!result.success) {
+  if (!result || !result.success) {
     toggleSPJLoading(false);
-    showToast('Error SPJ: ' + result.error, 'error');
+    if (isRefresh) {
+      const refreshButton = document.getElementById('spjRefreshBtn');
+      refreshButton.disabled = false;
+      refreshButton.innerText = '🔄 Refresh';
+    }
+    showToast('Error SPJ: ' + (result && result.error ? result.error : 'Respons server tidak valid.'), 'error');
     return;
   }
   toggleSPJLoading(false);
-  spjAllData        = result.data           || [];
-  spjTanggalColumns  = result.tanggalColumns || [];
+  spjFilteredData = result.data || [];
+  spjTanggalColumns = result.tanggalColumns || [];
+  spjSummary = result.summary || { total: 0, process: 0, done: 0, noAdjustment: 0 };
+  spjTotalRows = result.pagination ? result.pagination.totalRows : spjFilteredData.length;
+  spjTotalPages = result.pagination ? result.pagination.totalPages : Math.max(1, Math.ceil(spjTotalRows / SPJ_ROWS_PER_PAGE));
+  spjCurrentPage = result.pagination ? result.pagination.page : spjCurrentPage;
   if (result.tanggalUpdate) {
     document.getElementById('spj-lastUpdate').textContent = formatSPJDate(result.tanggalUpdate);
   }
-  populateSPJFilters(result.filters);
-  spjFilteredData = [...spjAllData];
-  applySPJFilters();
-  if (isRefresh) showToast("Data SPJ berhasil diperbarui.", "success");
+  if (result.filters) {
+    populateSPJFilters(result.filters);
+    spjFiltersLoaded = true;
+  }
+  updateSPJSummary();
+  renderSPJTable();
+  spjHasRenderedData = true;
+  if (!result._fromSessionCache && result.filters && spjCurrentPage === 1 &&
+      !document.getElementById('spj-searchInput').value &&
+      !document.getElementById('spj-filterOP').value &&
+      !document.getElementById('spj-filterCustomer').value &&
+      !document.getElementById('spj-filterProduk').value &&
+      !document.getElementById('spj-filterTOH').value &&
+      !document.getElementById('spj-filterAdjustment').value) {
+    saveSPJSessionCache(result);
+  }
+  if (isRefresh) {
+    const refreshButton = document.getElementById('spjRefreshBtn');
+    refreshButton.disabled = false;
+    refreshButton.innerText = '🔄 Refresh';
+    showToast('Data SPJ berhasil diperbarui.', 'success');
+  }
 }
 
 function populateSPJFilters(filters) {
   const setOptions = (id, label, arr) => {
     const el = document.getElementById(id);
     const prevVal = el.value;
-    el.innerHTML = `<option value="">${escapeHtml(label)}</option>`;
+    const fragment = document.createDocumentFragment();
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = label;
+    fragment.appendChild(defaultOption);
     (arr || []).forEach(val => {
       const opt = document.createElement('option');
       opt.value = val;
       opt.textContent = val;
-      el.appendChild(opt);
+      fragment.appendChild(opt);
     });
+    el.replaceChildren(fragment);
     if ([...el.options].some(o => o.value === prevVal)) el.value = prevVal;
   };
   setOptions('spj-filterOP',         'ALL OP',         filters.kodeOP);
@@ -963,55 +2167,20 @@ function populateSPJFilters(filters) {
 }
 
 function applySPJFilters() {
-  const op         = document.getElementById('spj-filterOP').value;
-  const customer   = document.getElementById('spj-filterCustomer').value;
-  const produk     = document.getElementById('spj-filterProduk').value;
-  const toh        = document.getElementById('spj-filterTOH').value;
-  const adjustment = document.getElementById('spj-filterAdjustment').value;
-  const search     = document.getElementById('spj-searchInput').value.toLowerCase();
-
-  spjFilteredData = spjAllData.filter(item => {
-    if (op         && item['Kode OP']          !== op)         return false;
-    if (customer   && item['Customer']          !== customer)   return false;
-    if (produk     && item['Produk']            !== produk)     return false;
-    if (toh        && item['Nama TOH/WOH']      !== toh)        return false;
-    if (adjustment && item['Status Adjustment'] !== adjustment) return false;
-    if (search) {
-      const haystack = [
-        item['Kode OP'], item['Nama OP'], item['Customer'],
-        item['Produk'],  item['Nama TOH/WOH'], item['Status Adjustment'], item['SPJ']
-      ].join(' ').toLowerCase();
-      if (!haystack.includes(search)) return false;
-    }
-    return true;
-  });
-
-  updateSPJSummary();
   spjCurrentPage = 1;
-  renderSPJTable();
+  loadSPJData(false);
 }
 
 function updateSPJSummary() {
-  const total = spjFilteredData.length;
-  let inProcess = 0, done = 0, noAdjustment = 0;
-  spjFilteredData.forEach(i => {
-    const v = (i['Status Adjustment'] || '').toLowerCase();
-    if (v === 'process') inProcess++;
-    else if (v === 'done') done++;
-    else if (v === 'no adjustment') noAdjustment++;
-  });
-  document.getElementById('spj-totalSPJ').textContent          = total;
-  document.getElementById('spj-countProcess').textContent      = inProcess;
-  document.getElementById('spj-countDone').textContent         = done;
-  document.getElementById('spj-countNoAdjustment').textContent = noAdjustment;
+  document.getElementById('spj-totalSPJ').textContent          = spjSummary.total || 0;
+  document.getElementById('spj-countProcess').textContent      = spjSummary.process || 0;
+  document.getElementById('spj-countDone').textContent         = spjSummary.done || 0;
+  document.getElementById('spj-countNoAdjustment').textContent = spjSummary.noAdjustment || 0;
 }
 
 function renderSPJTable() {
-  const start    = (spjCurrentPage - 1) * SPJ_ROWS_PER_PAGE;
-  const end      = Math.min(start + SPJ_ROWS_PER_PAGE, spjFilteredData.length);
-  const pageData = spjFilteredData.slice(start, end);
   renderSPJHeader();
-  renderSPJBody(pageData);
+  renderSPJBody(spjFilteredData);
   updateSPJPages();
 }
 
@@ -1025,8 +2194,8 @@ function renderSPJHeader() {
   ];
   const midHeaders = [
     { label: 'Tanggal SLA',       cls: 'col-w-110' },
-    { label: 'UJP',               cls: 'col-w-90'  },
-    { label: 'Charging',          cls: 'col-w-90'  },
+    { label: 'UJP',               cls: 'currency-header' },
+    { label: 'Charging',          cls: 'currency-header' },
     { label: 'Status Rekon',      cls: 'col-w-120' },
     { label: 'Nama TOH/WOH',      cls: 'col-w-160 text-left' },
     { label: 'Status Adjustment', cls: 'col-w-140' }
@@ -1058,8 +2227,8 @@ function renderSPJBody(data) {
     out.push(`<td>${escapeHtml(item['SPJ']) || '-'}</td>`);
     out.push(`<td class="text-left">${escapeHtml(item['Produk'])}</td>`);
     out.push(`<td>${escapeHtml(item['Tanggal SLA'])}</td>`);
-    out.push(`<td>${escapeHtml(item['UJP'])}</td>`);
-    out.push(`<td>${escapeHtml(item['Charging'])}</td>`);
+    out.push(`<td class="currency-cell">${formatRupiah(item['UJP'])}</td>`);
+    out.push(`<td class="currency-cell">${formatRupiah(item['Charging'])}</td>`);
     out.push(`<td>${spjStatusBadge(item['Status Rekon'])}</td>`);
     out.push(`<td class="text-left">${escapeHtml(item['Nama TOH/WOH'])}</td>`);
     out.push(`<td>${spjStatusBadge(item['Status Adjustment'])}</td>`);
@@ -1073,42 +2242,74 @@ function renderSPJBody(data) {
 }
 
 function updateSPJPages() {
-  const totalPages = Math.ceil(spjFilteredData.length / SPJ_ROWS_PER_PAGE);
-  document.getElementById('spj-totalRows').textContent   = spjFilteredData.length;
-  document.getElementById('spj-currentPage').textContent = spjFilteredData.length ? spjCurrentPage : 0;
-  document.getElementById('spj-totalPages').textContent  = totalPages || 1;
-  document.getElementById('spj-prevBtn').disabled        = (spjCurrentPage === 1);
-  document.getElementById('spj-nextBtn').disabled        = (spjCurrentPage >= (totalPages || 1));
+  updatePaginationUI({
+    currentPage: spjCurrentPage,
+    totalPages: spjTotalPages,
+    totalRows: spjTotalRows,
+    totalRowsId: 'spj-totalRows',
+    totalPagesId: 'spj-totalPages',
+    prevButtonId: 'spj-prevBtn',
+    nextButtonId: 'spj-nextBtn',
+    pageSelectId: 'spj-pageSelect',
+    pageNumbersId: 'spj-pageNumbers',
+    onPageChange: spjGoToPage
+  });
 }
 
-function spjPrevPage() { if (spjCurrentPage > 1) { spjCurrentPage--; renderSPJTable(); } }
-function spjNextPage() {
-  const total = Math.ceil(spjFilteredData.length / SPJ_ROWS_PER_PAGE);
-  if (spjCurrentPage < total) { spjCurrentPage++; renderSPJTable(); }
+function spjGoToPage(page) {
+  const nextPage = Math.min(Math.max(1, Number(page) || 1), spjTotalPages);
+  if (nextPage === spjCurrentPage) return;
+  spjCurrentPage = nextPage;
+  loadSPJData(false);
+  scrollTableToTop('tabSpj');
 }
+
+function spjPrevPage() { spjGoToPage(spjCurrentPage - 1); }
+function spjNextPage() { spjGoToPage(spjCurrentPage + 1); }
 
 function refreshSPJData() {
   const btn = document.getElementById('spjRefreshBtn');
   btn.disabled  = true;
   btn.innerText = "⏳ Loading...";
-
-  google.script.run
-    .withSuccessHandler(res => {
-      displaySPJData(res, true);
-      btn.disabled  = false;
-      btn.innerText = "🔄 Refresh";
-    })
-    .withFailureHandler(err => {
-      btn.disabled  = false;
-      btn.innerText = "🔄 Refresh";
-      showToast('Error SPJ: ' + err.message, 'error');
-    })
-    .getSPJData();
+  spjCurrentPage = 1;
+  loadSPJData(true);
 }
 
 let spjLoaded = false;
+function saveSPJSessionCache(result) {
+  try {
+    sessionStorage.setItem(SPJ_SESSION_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      payload: result
+    }));
+  } catch (error) {
+    console.warn('Session cache SPJ tidak tersedia:', error);
+  }
+}
+
+function getSPJSessionCache() {
+  try {
+    const raw = sessionStorage.getItem(SPJ_SESSION_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (!cached || !cached.payload ||
+        Date.now() - Number(cached.savedAt) > SPJ_SESSION_CACHE_MAX_AGE_MS) {
+      sessionStorage.removeItem(SPJ_SESSION_CACHE_KEY);
+      return null;
+    }
+    cached.payload._fromSessionCache = true;
+    return cached.payload;
+  } catch (error) {
+    return null;
+  }
+}
+
 function initSPJ() {
-  if (!spjLoaded) { loadSPJData(false); spjLoaded = true; }
+  if (spjLoaded) return;
+  const cached = getSPJSessionCache();
+  if (cached) displaySPJData(cached, false);
+  loadSPJData(false);
+  spjLoaded = true;
 }
 
 /* ==========================================================================
@@ -1128,6 +2329,7 @@ function onLookerFrameLoad() {
   const loading = document.getElementById('lookerLoading');
   const frame   = document.getElementById('lookerFrame');
   if (loading) loading.style.display = 'none';
+  document.getElementById('tabLooker').setAttribute('aria-busy', 'false');
   frame.style.display = 'block';
   triggerLookerResize();
 }
@@ -1137,10 +2339,473 @@ function triggerLookerResize() {
   setTimeout(() => window.dispatchEvent(new Event('resize')), 700);
 }
 
-/* ==========================================================================
-   5. NAVIGASI SIDEBAR
+/* ========================================================================== 
+   5. ADMINISTRATION
    ========================================================================== */
-const TAB_ID_MAP = { rekon: 'tabRekon', spj: 'tabSpj', looker: 'tabLooker' };
+let administrationInitialized = false;
+let administrationBusy = false;
+let adminCoverageRows = [];
+let adminConfigRows = [];
+let adminAreaSummary = [];
+let adminOwners = [];
+let adminSettings = {};
+let adminSettingDefinitions = [];
+let adminEditingSources = [];
+let adminEditingMasterRowNumbers = {};
+const adminSelectedRows = new Set();
+
+function setAdminBusy(isBusy) {
+  administrationBusy = isBusy;
+  ['adminRefreshBtn', 'adminMapSaveBtn', 'adminConfigSaveBtn', 'adminSettingsSaveBtn'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.disabled = isBusy;
+  });
+}
+
+function applyDashboardSettings(settings) {
+  if (!settings) return;
+  const title = settings.DASHBOARD_TITLE || 'Monitoring Dashboard';
+  const brand = document.querySelector('.sidebar-brand');
+  if (brand) brand.textContent = title;
+  document.title = title;
+
+  const rekonPageSize = Number(settings.REKON_ROWS_PER_PAGE);
+  const spjPageSize = Number(settings.SPJ_ROWS_PER_PAGE);
+  const pollSeconds = Number(settings.REKON_POLL_SECONDS);
+  if (Number.isFinite(rekonPageSize)) REKON_ROWS_PER_PAGE = Math.min(Math.max(rekonPageSize, 5), 100);
+  if (Number.isFinite(spjPageSize)) SPJ_ROWS_PER_PAGE = Math.min(Math.max(spjPageSize, 5), 100);
+  if (Number.isFinite(pollSeconds)) {
+    REKON_POLL_INTERVAL_MS = Math.min(Math.max(pollSeconds, 30), 900) * 1000;
+    scheduleRekonPolling();
+  }
+  const frame = document.getElementById('lookerFrame');
+  if (frame && settings.LOOKER_STUDIO_URL && !lookerLoaded) frame.dataset.src = settings.LOOKER_STUDIO_URL;
+}
+
+function initializeDashboardContext() {
+  google.script.run
+    .withSuccessHandler(context => {
+      const adminNav = document.getElementById('adminNavItem');
+      if (adminNav && context && context.isAdmin) adminNav.hidden = false;
+      if (context && context.settings) applyDashboardSettings(context.settings);
+    })
+    .withFailureHandler(error => console.warn('Konteks pengguna tidak dapat dimuat:', error))
+    .getDashboardContext();
+}
+
+function loadAdministration(showSuccess) {
+  if (administrationBusy) return;
+  setAdminBusy(true);
+  const body = document.getElementById('adminCoverageBody');
+  body.innerHTML = '<tr><td colspan="8" class="admin-empty">Memuat coverage Operating Point...</td></tr>';
+  google.script.run
+    .withSuccessHandler(result => {
+      setAdminBusy(false);
+      if (!result || !result.success) {
+        showToast('Data administration tidak valid.', 'error');
+        return;
+      }
+      administrationInitialized = true;
+      adminCoverageRows = result.coverage || [];
+      adminConfigRows = result.configs || [];
+      adminAreaSummary = result.areaSummary || [];
+      adminOwners = result.owners || [];
+      adminSettings = result.settings || {};
+      adminSettingDefinitions = result.settingDefinitions || [];
+      adminSelectedRows.clear();
+      document.getElementById('adminTotalOP').textContent = result.summary ? result.summary.total : 0;
+      document.getElementById('adminCoveredOP').textContent = result.summary ? result.summary.complete : 0;
+      document.getElementById('adminUncoveredOP').textContent = result.summary ? result.summary.uncovered : 0;
+      document.getElementById('adminConflictOP').textContent = result.summary ? result.summary.conflicts : 0;
+      const defaultCoverage = adminSettings.DEFAULT_ADMIN_COVERAGE;
+      if (defaultCoverage && [...document.getElementById('adminCoverageStatus').options].some(option => option.value === defaultCoverage)) {
+        document.getElementById('adminCoverageStatus').value = defaultCoverage;
+      }
+      populateAdminReferenceControls();
+      renderAdminAreaBoard();
+      renderAdminCoverage();
+      renderAdminConfigs();
+      renderAdminSettings();
+      if (Number(result.syncedMissingCount || 0) > 0) {
+        showToast(result.syncedMissingCount + ' OP baru ditambahkan ke Master_OP_OH untuk dilengkapi.', 'success');
+      } else if (showSuccess) {
+        showToast('Data administration diperbarui.', 'success');
+      }
+    })
+    .withFailureHandler(error => {
+      setAdminBusy(false);
+      body.innerHTML = '<tr><td colspan="8" class="admin-empty">Gagal memuat data administration.</td></tr>';
+      showToast('Administration: ' + (error.message || error), 'error');
+    })
+    .getAdministrationData();
+}
+
+function populateAdminReferenceControls() {
+  const areas = Array.from(new Set(adminCoverageRows.map(item => item.area).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'id'));
+  const areaFilter = document.getElementById('adminCoverageArea');
+  const currentArea = areaFilter.value;
+  areaFilter.innerHTML = '<option value="ALL">Semua area</option><option value="UNMAPPED">Belum ada area</option>' +
+    areas.map(area => '<option value="' + escapeHtml(area) + '">' + escapeHtml(area) + '</option>').join('');
+  if ([...areaFilter.options].some(option => option.value === currentArea)) areaFilter.value = currentArea;
+  document.getElementById('adminAreaList').innerHTML = areas.map(area => '<option value="' + escapeHtml(area) + '"></option>').join('');
+  document.getElementById('adminOwnerNameList').innerHTML = adminOwners.map(owner => '<option value="' + escapeHtml(owner.name) + '">' + escapeHtml(owner.email || '') + '</option>').join('');
+  document.getElementById('adminBulkOwner').innerHTML = '<option value="">Pilih PIC/TOH</option>' + adminOwners.map((owner, index) =>
+    '<option value="' + index + '">' + escapeHtml(owner.name) + (owner.email ? ' - ' + escapeHtml(owner.email) : '') + '</option>'
+  ).join('');
+}
+
+function renderAdminAreaBoard() {
+  const board = document.getElementById('adminAreaBoard');
+  if (!adminAreaSummary.length) {
+    board.innerHTML = '<div class="admin-empty">Belum ada data area.</div>';
+    return;
+  }
+  board.innerHTML = adminAreaSummary.map(item => {
+    const unmapped = item.area === 'BELUM TERPETAKAN';
+    return '<button type="button" class="admin-area-card' + (unmapped ? ' is-unmapped' : '') + '" onclick="filterAdminByArea(\'' + escapeHtml(unmapped ? 'UNMAPPED' : item.area) + '\')">' +
+      '<div class="admin-area-card-head"><b>' + escapeHtml(item.area) + '</b><span>' + item.percentage + '%</span></div>' +
+      '<div class="admin-progress"><span style="width:' + item.percentage + '%"></span></div>' +
+      '<div class="admin-area-meta"><span>' + item.complete + '/' + item.total + ' lengkap</span><span>' + Number(item.rowCount || 0).toLocaleString('id-ID') + ' baris</span></div>' +
+    '</button>';
+  }).join('');
+}
+
+function filterAdminByArea(area) {
+  document.getElementById('adminCoverageArea').value = area;
+  document.getElementById('adminCoverageStatus').value = area === 'UNMAPPED' ? 'UNCOVERED' : 'ALL';
+  renderAdminCoverage();
+  document.getElementById('adminCoverageBody').closest('.admin-table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderAdminCoverage() {
+  const status = document.getElementById('adminCoverageStatus').value;
+  const source = document.getElementById('adminCoverageSource').value;
+  const area = document.getElementById('adminCoverageArea').value;
+  const search = document.getElementById('adminCoverageSearch').value.trim().toLowerCase();
+  const filtered = adminCoverageRows.filter(item => {
+    if (status === 'COVERED' && !item.complete) return false;
+    if (status === 'UNCOVERED' && item.complete) return false;
+    if (status === 'CONFLICT' && !item.conflict) return false;
+    if (source !== 'ALL' && !(item.sources || [item.source]).includes(source)) return false;
+    if (area === 'UNMAPPED' && item.area) return false;
+    if (area !== 'ALL' && area !== 'UNMAPPED' && item.area !== area) return false;
+    if (search) {
+      const haystack = [item.area, item.kodeCabang, item.namaCabang, item.kodeOP, item.namaOP, item.customer, item.toh, item.email, item.sourceLabel].join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+  const body = document.getElementById('adminCoverageBody');
+  if (!filtered.length) {
+    body.innerHTML = '<tr><td colspan="8" class="admin-empty">Tidak ada Operating Point sesuai filter.</td></tr>';
+    updateAdminBulkBar();
+    return;
+  }
+  body.innerHTML = filtered.map(item => {
+    const originalIndex = adminCoverageRows.indexOf(item);
+    const itemSources = item.sources || [item.source];
+    const masterRows = item.masterRowNumbers || {};
+    const masterReference = itemSources.map(sourceCode => {
+      const rowNumber = Number(masterRows[sourceCode] || item.masterRowNumber || 0);
+      return sourceCode + (rowNumber ? ' baris ' + rowNumber : ' belum tercatat');
+    }).join(' · ');
+    const missingText = (item.missingFields || []).join(', ');
+    let badge = '<span class="admin-badge admin-badge-ok">Lengkap</span>';
+    if (item.conflict) badge = '<span class="admin-badge admin-badge-conflict">Konflik</span>';
+    else if (!item.toh && !item.area) badge = '<span class="admin-badge admin-badge-missing">Belum mapped</span>';
+    else if (!item.complete) badge = '<span class="admin-badge admin-badge-partial">Parsial</span>';
+    return '<tr>' +
+      '<td><input class="admin-row-check" type="checkbox" data-index="' + originalIndex + '" ' + (adminSelectedRows.has(originalIndex) ? 'checked' : '') + ' onchange="toggleAdminRowSelection(' + originalIndex + ',this.checked)" aria-label="Pilih ' + escapeHtml(item.kodeOP) + '"></td>' +
+      '<td>' + badge + '</td>' +
+      '<td><b>' + (escapeHtml(item.area) || '-') + '</b><div class="admin-code">' + (escapeHtml(item.kodeCabang) || '') + '</div></td>' +
+      '<td>' + escapeHtml(item.sourceLabel) + '</td>' +
+      '<td class="admin-op-cell"><b>' + escapeHtml(item.kodeOP) + ' · ' + escapeHtml(item.namaOP) + '</b><span>' + (escapeHtml(item.customer) || '-') + '</span><span class="admin-code">Master_OP_OH · ' + escapeHtml(masterReference) + '</span>' + (missingText ? '<span class="admin-missing-fields">Belum lengkap: ' + escapeHtml(missingText) + '</span>' : '') + '</td>' +
+      '<td class="admin-owner-cell"><b>' + (escapeHtml(item.toh) || '-') + '</b><span>' + (escapeHtml(item.email) || '-') + '</span></td>' +
+      '<td>' + Number(item.rowCount || 0).toLocaleString('id-ID') + '</td>' +
+      '<td><button class="btn btn-secondary" type="button" onclick="editAdminMapping(' + originalIndex + ')">Edit</button></td>' +
+    '</tr>';
+  }).join('');
+  updateAdminBulkBar();
+}
+
+function editAdminMapping(index) {
+  const item = adminCoverageRows[index];
+  if (!item) return;
+  adminEditingSources = (item.sources || [item.source]).slice();
+  adminEditingMasterRowNumbers = Object.assign({}, item.masterRowNumbers || {});
+  if (!Object.keys(adminEditingMasterRowNumbers).length && item.source) {
+    adminEditingMasterRowNumbers[item.source] = item.masterRowNumber || 0;
+  }
+  document.getElementById('adminMasterRow').value = item.masterRowNumber || '';
+  document.getElementById('adminMasterRowLabel').textContent = adminEditingSources.length > 1
+    ? adminEditingSources.length + ' MASTER TERKAIT'
+    : (item.masterRowNumber ? 'MASTER BARIS ' + item.masterRowNumber : 'MASTER_OP_OH');
+  document.getElementById('adminMapSource').value = item.source;
+  document.getElementById('adminMapSource').disabled = true;
+  document.getElementById('adminMapArea').value = item.area || '';
+  document.getElementById('adminMapKodeCabang').value = item.kodeCabang || '';
+  document.getElementById('adminMapNamaCabang').value = item.namaCabang || '';
+  document.getElementById('adminMapKodeOP').value = item.kodeOP || '';
+  document.getElementById('adminMapNamaOP').value = item.namaOP || '';
+  document.getElementById('adminMapCustomer').value = item.customer || '';
+  document.getElementById('adminMapTOH').value = item.toh || '';
+  document.getElementById('adminMapEmail').value = item.email || '';
+  document.getElementById('adminMapTOH').focus();
+  document.getElementById('adminMappingForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function resetAdminMappingForm() {
+  document.getElementById('adminMappingForm').reset();
+  adminEditingSources = [];
+  adminEditingMasterRowNumbers = {};
+  document.getElementById('adminMasterRow').value = '';
+  document.getElementById('adminMasterRowLabel').textContent = 'MASTER_OP_OH';
+  document.getElementById('adminMapSource').disabled = false;
+}
+
+function syncAdminOwnerEmail() {
+  const name = document.getElementById('adminMapTOH').value.trim().toLowerCase();
+  const owner = adminOwners.find(item => item.name.toLowerCase() === name);
+  if (owner && owner.email) document.getElementById('adminMapEmail').value = owner.email;
+}
+
+function getAdminMappingPayload(item, overrides) {
+  const owner = overrides && overrides.owner;
+  return {
+    source: item.source,
+    sources: (item.sources || [item.source]).slice(),
+    masterRowNumber: item.masterRowNumber || 0,
+    masterRowNumbers: Object.assign({}, item.masterRowNumbers || {}),
+    area: overrides && overrides.area ? overrides.area : (item.area || ''),
+    kodeCabang: item.kodeCabang || '',
+    namaCabang: item.namaCabang || '',
+    kodeOP: item.kodeOP,
+    namaOP: item.namaOP,
+    customer: item.customer || '',
+    toh: owner ? owner.name : (item.toh || ''),
+    email: owner ? owner.email : (item.email || '')
+  };
+}
+
+function saveAdminMapping(event) {
+  event.preventDefault();
+  if (administrationBusy) return;
+  const payload = {
+    source: document.getElementById('adminMapSource').value,
+    sources: adminEditingSources.length
+      ? adminEditingSources.slice()
+      : [document.getElementById('adminMapSource').value],
+    masterRowNumber: document.getElementById('adminMasterRow').value,
+    masterRowNumbers: Object.assign({}, adminEditingMasterRowNumbers),
+    area: document.getElementById('adminMapArea').value,
+    kodeCabang: document.getElementById('adminMapKodeCabang').value,
+    namaCabang: document.getElementById('adminMapNamaCabang').value,
+    kodeOP: document.getElementById('adminMapKodeOP').value,
+    namaOP: document.getElementById('adminMapNamaOP').value,
+    customer: document.getElementById('adminMapCustomer').value,
+    toh: document.getElementById('adminMapTOH').value,
+    email: document.getElementById('adminMapEmail').value
+  };
+  setAdminBusy(true);
+  google.script.run
+    .withSuccessHandler(result => {
+      setAdminBusy(false);
+      resetAdminMappingForm();
+      showToast(result && result.message ? result.message : 'Mapping berhasil disimpan.', 'success');
+      loadAdministration(false);
+    })
+    .withFailureHandler(error => {
+      setAdminBusy(false);
+      showToast('Gagal menyimpan mapping: ' + (error.message || error), 'error');
+    })
+    .saveAdministrationMapping(payload);
+}
+
+function toggleAdminRowSelection(index, checked) {
+  if (checked) adminSelectedRows.add(index);
+  else adminSelectedRows.delete(index);
+  updateAdminBulkBar();
+}
+
+function toggleAdminSelectAll(checked) {
+  document.querySelectorAll('.admin-row-check').forEach(checkbox => {
+    const index = Number(checkbox.dataset.index);
+    checkbox.checked = checked;
+    if (checked) adminSelectedRows.add(index);
+    else adminSelectedRows.delete(index);
+  });
+  updateAdminBulkBar();
+}
+
+function updateAdminBulkBar() {
+  document.getElementById('adminBulkCount').textContent = adminSelectedRows.size;
+  document.getElementById('adminBulkBar').classList.toggle('visible', adminSelectedRows.size > 0);
+  const visibleChecks = [...document.querySelectorAll('.admin-row-check')];
+  const selectAll = document.getElementById('adminSelectAll');
+  selectAll.checked = visibleChecks.length > 0 && visibleChecks.every(checkbox => checkbox.checked);
+  selectAll.indeterminate = visibleChecks.some(checkbox => checkbox.checked) && !selectAll.checked;
+}
+
+function saveAdminBulkMapping() {
+  if (administrationBusy || !adminSelectedRows.size) return;
+  const area = document.getElementById('adminBulkArea').value.trim();
+  const ownerIndex = document.getElementById('adminBulkOwner').value;
+  const owner = ownerIndex === '' ? null : adminOwners[Number(ownerIndex)];
+  if (!area && !owner) {
+    showToast('Isi area atau pilih PIC/TOH untuk mapping massal.', 'error');
+    return;
+  }
+  const payloads = [...adminSelectedRows].map(index => getAdminMappingPayload(adminCoverageRows[index], { area: area, owner: owner }));
+  if (payloads.some(item => !item.area)) {
+    showToast('Beberapa OP belum memiliki area. Isi area tujuan terlebih dahulu.', 'error');
+    return;
+  }
+  if (payloads.some(item => !item.toh)) {
+    showToast('Beberapa OP belum memiliki PIC/TOH. Pilih PIC terlebih dahulu.', 'error');
+    return;
+  }
+  if (payloads.some(item => !item.kodeCabang || !item.namaCabang || !item.customer || !item.email)) {
+    showToast('Mapping massal hanya dapat digunakan jika kode/nama cabang, customer, dan email TOH sudah tersedia.', 'error');
+    return;
+  }
+  setAdminBusy(true);
+  google.script.run
+    .withSuccessHandler(result => {
+      setAdminBusy(false);
+      showToast(result && result.message ? result.message : 'Mapping massal berhasil disimpan.', 'success');
+      loadAdministration(false);
+    })
+    .withFailureHandler(error => {
+      setAdminBusy(false);
+      showToast('Mapping massal gagal: ' + (error.message || error), 'error');
+    })
+    .saveAdministrationMappingsBulk(payloads);
+}
+
+function renderAdminConfigs() {
+  const body = document.getElementById('adminConfigBody');
+  if (!adminConfigRows.length) {
+    body.innerHTML = '<tr><td colspan="6" class="admin-empty">Belum ada konfigurasi.</td></tr>';
+    return;
+  }
+  body.innerHTML = adminConfigRows.map((item, index) => '<tr>' +
+    '<td><b>' + escapeHtml(item.key) + '</b></td>' +
+    '<td>' + escapeHtml(item.value) + '</td>' +
+    '<td>' + (escapeHtml(item.description) || '-') + '</td>' +
+    '<td><span class="admin-badge ' + (item.status === 'ACTIVE' ? 'admin-badge-ok' : 'admin-badge-missing') + '">' + escapeHtml(item.status) + '</span></td>' +
+    '<td>' + (escapeHtml(item.updatedBy) || '-') + '</td>' +
+    '<td><button class="btn btn-secondary" type="button" onclick="editAdminConfig(' + index + ')">Edit</button></td>' +
+  '</tr>').join('');
+}
+
+function editAdminConfig(index) {
+  const item = adminConfigRows[index];
+  if (!item) return;
+  document.getElementById('adminConfigKey').value = item.key || '';
+  document.getElementById('adminConfigValue').value = item.value || '';
+  document.getElementById('adminConfigDescription').value = item.description || '';
+  document.getElementById('adminConfigStatus').value = item.status || 'ACTIVE';
+  document.getElementById('adminConfigValue').focus();
+}
+
+function resetAdminConfigForm() {
+  document.getElementById('adminConfigForm').reset();
+}
+
+function saveAdminConfig(event) {
+  event.preventDefault();
+  if (administrationBusy) return;
+  const payload = {
+    key: document.getElementById('adminConfigKey').value,
+    value: document.getElementById('adminConfigValue').value,
+    description: document.getElementById('adminConfigDescription').value,
+    status: document.getElementById('adminConfigStatus').value
+  };
+  setAdminBusy(true);
+  google.script.run
+    .withSuccessHandler(result => {
+      setAdminBusy(false);
+      resetAdminConfigForm();
+      showToast(result && result.message ? result.message : 'Konfigurasi berhasil disimpan.', 'success');
+      loadAdministration(false);
+    })
+    .withFailureHandler(error => {
+      setAdminBusy(false);
+      showToast('Gagal menyimpan konfigurasi: ' + (error.message || error), 'error');
+    })
+    .saveAdministrationConfig(payload);
+}
+
+function renderAdminSettings() {
+  const grid = document.getElementById('adminSettingsGrid');
+  if (!adminSettingDefinitions.length) {
+    grid.innerHTML = '<div class="admin-empty">Definisi pengaturan belum tersedia.</div>';
+    return;
+  }
+  grid.innerHTML = adminSettingDefinitions.map(definition => {
+    const id = 'adminSetting_' + definition.key;
+    const value = adminSettings[definition.key] == null ? definition.defaultValue : adminSettings[definition.key];
+    let control = '';
+    if (definition.type === 'select') {
+      control = '<select id="' + id + '">' + (definition.options || []).map(option =>
+        '<option value="' + escapeHtml(option) + '"' + (String(option) === String(value) ? ' selected' : '') + '>' + escapeHtml(option) + '</option>'
+      ).join('') + '</select>';
+    } else {
+      const type = definition.type === 'number' ? 'number' : (definition.type === 'url' ? 'url' : 'text');
+      const bounds = definition.type === 'number' ? ' min="' + definition.min + '" max="' + definition.max + '"' : '';
+      control = '<input id="' + id + '" type="' + type + '" value="' + escapeHtml(value) + '"' + bounds + '>';
+    }
+    return '<div class="admin-setting-card"><label for="' + id + '">' + escapeHtml(definition.label) + '</label>' + control +
+      '<small>Key: ' + escapeHtml(definition.key) + '</small></div>';
+  }).join('');
+}
+
+function saveAdminSettings(event) {
+  event.preventDefault();
+  if (administrationBusy) return;
+  const payload = {};
+  adminSettingDefinitions.forEach(definition => {
+    const element = document.getElementById('adminSetting_' + definition.key);
+    payload[definition.key] = element ? element.value : definition.defaultValue;
+  });
+  setAdminBusy(true);
+  google.script.run
+    .withSuccessHandler(result => {
+      setAdminBusy(false);
+      if (result && result.settings) {
+        adminSettings = result.settings;
+        applyDashboardSettings(result.settings);
+      }
+      showToast(result && result.message ? result.message : 'Pengaturan berhasil disimpan.', 'success');
+      loadAdministration(false);
+    })
+    .withFailureHandler(error => {
+      setAdminBusy(false);
+      showToast('Gagal menyimpan pengaturan: ' + (error.message || error), 'error');
+    })
+    .saveAdministrationSettings(payload);
+}
+
+function resetAdministrationCaches() {
+  if (administrationBusy) return;
+  setAdminBusy(true);
+  google.script.run
+    .withSuccessHandler(result => {
+      setAdminBusy(false);
+      showToast(result && result.message ? result.message : 'Cache berhasil direset.', 'success');
+      loadAdministration(false);
+    })
+    .withFailureHandler(error => {
+      setAdminBusy(false);
+      showToast('Gagal mereset cache: ' + (error.message || error), 'error');
+    })
+    .resetAdministrationCaches();
+}
+
+/* ==========================================================================
+   6. NAVIGASI SIDEBAR
+   ========================================================================== */
+const TAB_ID_MAP = { rekon: 'tabRekon', spj: 'tabSpj', looker: 'tabLooker', admin: 'tabAdmin' };
 
 function switchTab(tabId, btn) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -1153,7 +2818,9 @@ function switchTab(tabId, btn) {
     if (currentPane) currentPane.classList.remove('active-pane');
     nextPane.classList.add('active-pane');
 
+    if (tabId === 'rekon') checkRealtimeUpdate();
     if (tabId === 'spj') initSPJ();
+    if (tabId === 'admin' && !administrationInitialized) loadAdministration(false);
     if (tabId === 'looker') {
       initLooker();
       triggerLookerResize();
@@ -1166,6 +2833,7 @@ function switchTab(tabId, btn) {
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab'), btn));
 });
+initializeDashboardContext();
 </script>
 </body>
 </html>

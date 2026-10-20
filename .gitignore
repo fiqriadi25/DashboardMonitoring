@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.env
+.venv/
+venv/
+*.csv
+*.xls
+*.xlsx
+*.json
+!package.json
+!appsscript.json
